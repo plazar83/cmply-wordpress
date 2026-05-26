@@ -1,0 +1,532 @@
+.cmply-admin {
+	margin: 0 0 0 -20px;
+	color: #1d2327;
+}
+
+.cmply-shell {
+	background: #f0f0f1;
+	min-height: calc(100vh - 32px);
+}
+
+.cmply-topbar {
+	align-items: center;
+	background: #fff;
+	border-top: 1px solid #0b5cff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+	display: flex;
+	justify-content: space-between;
+	min-height: 48px;
+	padding: 0 24px;
+}
+
+.cmply-tabs {
+	display: flex;
+	gap: 8px;
+}
+
+.cmply-tab {
+	border-bottom: 3px solid transparent;
+	color: #475569;
+	display: inline-flex;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 45px;
+	padding: 0 12px;
+	text-decoration: none;
+}
+
+.cmply-tab:hover,
+.cmply-tab.is-active {
+	border-bottom-color: #0b5cff;
+	color: #0b5cff;
+}
+
+.cmply-plan {
+	align-items: center;
+	display: flex;
+	gap: 12px;
+}
+
+.cmply-main-grid {
+	display: grid;
+	gap: 20px;
+	grid-template-columns: minmax(0, 1fr) 360px;
+	padding: 20px 24px;
+}
+
+.cmply-primary {
+	display: grid;
+	gap: 16px;
+}
+
+.cmply-sidebar {
+	display: grid;
+	gap: 20px;
+	align-content: start;
+}
+
+.cmply-panel {
+	background: #fff;
+	border: 1px solid #d5dce8;
+	border-radius: 4px;
+	box-sizing: border-box;
+	padding: 24px;
+}
+
+.cmply-panel h1,
+.cmply-panel h2,
+.cmply-faq h2 {
+	color: #1d2327;
+	font-size: 16px;
+	font-weight: 700;
+	margin: 0 0 14px;
+}
+
+.cmply-panel h1 {
+	font-size: 20px;
+}
+
+.cmply-panel p {
+	font-size: 14px;
+	line-height: 1.55;
+	margin: 0 0 16px;
+}
+
+.cmply-review {
+	border-color: #c9d8ef;
+}
+
+.cmply-connection h2 {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+}
+
+.cmply-status-dot {
+	background: #f59e0b;
+	border-radius: 999px;
+	display: inline-block;
+	height: 14px;
+	width: 14px;
+}
+
+.cmply-status-dot.is-ok {
+	background: #00a86b;
+}
+
+.cmply-meta {
+	display: grid;
+	gap: 8px;
+	margin: 18px 0;
+}
+
+.cmply-meta code,
+.cmply-gcm code {
+	background: #f6f7f7;
+	border-radius: 4px;
+	display: inline-block;
+	max-width: 100%;
+	padding: 4px 7px;
+	white-space: normal;
+	word-break: break-all;
+}
+
+.cmply-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.cmply-button {
+	align-items: center;
+	border-radius: 4px;
+	box-sizing: border-box;
+	display: inline-flex;
+	font-weight: 700;
+	min-height: 34px;
+	padding: 8px 16px;
+	text-decoration: none;
+}
+
+.cmply-button-primary {
+	background: #0b74ff;
+	color: #fff;
+}
+
+.cmply-button-primary:hover,
+.cmply-button-primary:focus {
+	background: #005bd3;
+	color: #fff;
+}
+
+.cmply-button-secondary {
+	background: #fff;
+	border: 1px solid #c3cbd6;
+	color: #334155;
+}
+
+.cmply-button-danger {
+	background: #fff;
+	border: 1px solid #ff2d55;
+	color: #d1002f;
+}
+
+.cmply-button-danger:hover,
+.cmply-button-danger:focus {
+	background: #fff5f7;
+	color: #a50025;
+}
+
+.cmply-button-pro {
+	background: linear-gradient(90deg, #ff4d00, #ffc400);
+	color: #fff;
+}
+
+.cmply-button-pro:hover,
+.cmply-button-pro:focus {
+	color: #fff;
+	filter: brightness(0.95);
+}
+
+.cmply-panel-heading {
+	border-bottom: 1px solid #d5dce8;
+	margin: -24px -24px 16px;
+	padding: 16px 20px;
+}
+
+.cmply-panel-heading h2 {
+	margin: 0;
+}
+
+.cmply-panel-heading span {
+	color: #666a84;
+	font-weight: 400;
+}
+
+.cmply-overview {
+	display: grid;
+	gap: 14px;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.cmply-overview-card {
+	background: #f4f5fb;
+	border-radius: 6px;
+	min-height: 118px;
+	padding: 20px 16px;
+}
+
+.cmply-overview-card span,
+.cmply-stat span {
+	color: #4b4d69;
+	display: block;
+	font-size: 13px;
+	margin-top: 24px;
+}
+
+.cmply-overview-card strong,
+.cmply-stat strong {
+	color: #1d2327;
+	display: block;
+	font-size: 16px;
+	margin-top: 4px;
+}
+
+.cmply-overview-card strong.is-active {
+	color: #00a86b;
+}
+
+.cmply-icon {
+	background: #dbeafe;
+	border-radius: 8px;
+	height: 40px;
+	position: relative;
+	width: 40px;
+}
+
+.cmply-icon::after {
+	color: #0b74ff;
+	content: "✓";
+	font-size: 20px;
+	font-weight: 700;
+	left: 50%;
+	position: absolute;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.cmply-icon-language::after {
+	content: "◎";
+}
+
+.cmply-icon-target::after {
+	content: "⌾";
+}
+
+.cmply-icon-cookie::after {
+	content: "●";
+}
+
+.cmply-icon-grid::after {
+	content: "▦";
+}
+
+.cmply-icon-search::after {
+	content: "⌕";
+}
+
+.cmply-icon-document::after {
+	content: "□";
+}
+
+.cmply-icon-shield {
+	background: #dcecff;
+}
+
+.cmply-icon-target,
+.cmply-icon-document {
+	background: #ffe7bd;
+}
+
+.cmply-icon-grid,
+.cmply-icon-banner {
+	background: #ddf4ef;
+}
+
+.cmply-panel-footer {
+	border-top: 1px solid #d5dce8;
+	margin: 16px -24px -24px;
+	padding: 16px 20px;
+}
+
+.cmply-panel-footer a {
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.cmply-card-grid {
+	display: grid;
+	gap: 20px;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr);
+}
+
+.cmply-summary-grid {
+	display: grid;
+	gap: 34px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	padding: 22px 0;
+}
+
+.cmply-stat {
+	align-items: center;
+	display: flex;
+	gap: 14px;
+}
+
+.cmply-stat span {
+	margin-top: 0;
+}
+
+.cmply-empty-chart {
+	align-items: center;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: 170px;
+	text-align: center;
+}
+
+.cmply-empty-icon {
+	align-items: center;
+	background: #e5e7eb;
+	border-radius: 999px;
+	color: #fff;
+	display: flex;
+	font-size: 64px;
+	height: 78px;
+	justify-content: center;
+	line-height: 1;
+	width: 78px;
+}
+
+.cmply-upgrade {
+	padding: 28px 24px;
+}
+
+.cmply-upgrade h2 {
+	font-size: 20px;
+	line-height: 1.4;
+}
+
+.cmply-upgrade ul {
+	margin: 18px 0 26px;
+}
+
+.cmply-upgrade li {
+	margin-bottom: 12px;
+	padding-left: 20px;
+	position: relative;
+}
+
+.cmply-upgrade li::before {
+	color: #0b74ff;
+	content: "✓";
+	font-weight: 700;
+	left: 0;
+	position: absolute;
+}
+
+.cmply-faq {
+	padding: 8px 0;
+}
+
+.cmply-faq h2 {
+	margin: 0 0 18px;
+}
+
+.cmply-faq a {
+	align-items: center;
+	border-bottom: 1px solid #dddfe5;
+	color: #4b4d69;
+	display: flex;
+	font-weight: 700;
+	justify-content: space-between;
+	padding: 12px 0;
+	text-decoration: none;
+}
+
+.cmply-faq span {
+	color: #7b8094;
+	font-size: 28px;
+	line-height: 1;
+}
+
+.cmply-titlebar {
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 18px;
+}
+
+.cmply-gcm,
+.cmply-admin > .cmply-shell > .cmply-panel {
+	margin: 20px 24px;
+}
+
+.cmply-setting-row {
+	display: grid;
+	gap: 24px;
+	grid-template-columns: 360px minmax(0, 1fr);
+	padding: 16px 0;
+}
+
+.cmply-toggle {
+	background: #a8aaad;
+	border-radius: 999px;
+	display: inline-block;
+	height: 18px;
+	position: relative;
+	width: 36px;
+}
+
+.cmply-toggle::after {
+	background: #fff;
+	border-radius: 999px;
+	content: "";
+	height: 12px;
+	left: 3px;
+	position: absolute;
+	top: 3px;
+	width: 12px;
+}
+
+.cmply-gcm-table {
+	margin: 18px 0 20px;
+}
+
+.cmply-gcm-table th {
+	background: #e7e7ea;
+	font-weight: 600;
+}
+
+.cmply-gcm-table th,
+.cmply-gcm-table td {
+	padding: 16px 12px;
+}
+
+.cmply-settings-form .form-table th {
+	width: 260px;
+}
+
+.cmply-connect-box {
+	background: #f8fbff;
+	border: 1px solid #c9d8ef;
+	border-radius: 4px;
+	margin-bottom: 24px;
+	padding: 20px;
+}
+
+.cmply-connect-box h2 {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.cmply-save-button {
+	min-height: 36px;
+	padding-left: 18px !important;
+	padding-right: 18px !important;
+}
+
+.cmply-code {
+	font-family: Consolas, Monaco, monospace;
+}
+
+.cmply-footer {
+	color: #4b5563;
+	display: flex;
+	justify-content: space-between;
+	padding: 24px;
+}
+
+@media (max-width: 1200px) {
+	.cmply-main-grid,
+	.cmply-card-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.cmply-overview {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 782px) {
+	.cmply-admin {
+		margin-left: -10px;
+	}
+
+	.cmply-topbar,
+	.cmply-titlebar,
+	.cmply-plan {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.cmply-tabs {
+		flex-wrap: wrap;
+	}
+
+	.cmply-main-grid,
+	.cmply-gcm,
+	.cmply-admin > .cmply-shell > .cmply-panel {
+		margin: 0;
+		padding: 16px;
+	}
+
+	.cmply-overview,
+	.cmply-summary-grid,
+	.cmply-setting-row {
+		grid-template-columns: 1fr;
+	}
+}
