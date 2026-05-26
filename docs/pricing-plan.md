@@ -141,3 +141,97 @@ Cookiebot often prices by subpages/domains instead of pageviews, which can becom
 - Update plan enforcement for pageviews, sites, scanner frequency, analytics retention, and branding.
 - Expose current plan and pageview usage to the WordPress plugin later.
 - Add fair-use language for Enterprise/high-volume customers.
+
+## Current Pageview Limit Status In cmply.app
+
+Pageview limits are not just marketing text. The service already has real limit constants and usage tracking:
+
+- `lib/subscription.ts` defines `PLAN_LIMITS.maxPageViews`.
+- `lib/subscription.ts` exposes `hasExceededPageViews(plan, currentPageViews)`.
+- `/api/sites/[siteId]/view` increments `DailyStats.pageViews`.
+- `/api/auth/me` recalculates `subscription.usage.pageViewsThisMonth` from `DailyStats`.
+- Billing UI displays current usage versus plan limits.
+
+However, enforcement is currently incomplete:
+
+- `/api/sites/[siteId]/view` tracks pageviews but does not block or alter behavior after the limit.
+- `/api/consent` checks the pageview limit and can return `403`.
+- Blocking consent logging at the pageview limit is risky because it can break the consent flow exactly when a high-traffic customer exceeds their plan.
+
+## Recommended Pageview Enforcement Behavior
+
+Do not break the public consent banner when a customer exceeds their pageview limit.
+
+Recommended behavior after pageview limit is exceeded:
+
+1. Continue serving the CMPly SDK.
+2. Continue showing the banner and collecting essential consent choices.
+3. Continue necessary compliance behavior.
+4. Mark account/site as `limitExceeded`.
+5. Show upgrade warnings in dashboard and WordPress plugin.
+6. Restrict premium features instead of breaking consent:
+   - advanced analytics
+   - export data
+   - extended retention
+   - scanner scheduling
+   - webhooks
+   - white-label/custom branding depending on plan
+7. Optionally stop counting/reporting analytics beyond the plan limit, but do not fail the consent API with a hard `403`.
+
+## Suggested cmply.app Tasks For Pageview Enforcement
+
+- Move hard pageview-limit behavior out of `/api/consent`.
+- Add a shared helper, for example:
+
+```ts
+getPlanUsageState(user): {
+  plan: PlanType
+  pageViewsThisMonth: number
+  maxPageViews: number
+  limitExceeded: boolean
+  usagePercent: number
+}
+```
+
+- Update `/api/sites/[siteId]/view` to:
+  - keep counting pageviews;
+  - optionally return `{ limitExceeded: true }`;
+  - avoid expensive user lookups on every hit later by using cache/Redis if traffic grows.
+
+- Update `/api/consent` to:
+  - always accept essential consent records if the site exists;
+  - include `limitExceeded: true` in the response when applicable;
+  - avoid returning `403` just because pageviews are exceeded.
+
+- Update dashboard and billing UI to show:
+  - warning at 80%;
+  - stronger upgrade prompt at 100%;
+  - plan-specific next recommended upgrade.
+
+- Add an API endpoint for the WordPress plugin later:
+
+```text
+GET /api/sites/{siteId}/plan-usage
+```
+
+Suggested response:
+
+```json
+{
+  "ok": true,
+  "plan": "free",
+  "pageViewsThisMonth": 8123,
+  "maxPageViews": 10000,
+  "usagePercent": 81.23,
+  "limitExceeded": false,
+  "upgradeUrl": "https://cmply.app/pricing"
+}
+```
+
+- Update WordPress plugin top bar from static:
+
+```text
+Pageviews used: 0/5,000 (0%)
+```
+
+to live CMPly API data once `/plan-usage` exists.
