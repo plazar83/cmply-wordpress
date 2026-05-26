@@ -46,6 +46,12 @@ The CMPly web app still needs to implement that route. See:
 
 [docs/cmply-app-wordpress-connect.md](docs/cmply-app-wordpress-connect.md)
 
+## Pricing Recommendation
+
+The current recommended commercial packaging for CMPly is documented here:
+
+[docs/pricing-plan.md](docs/pricing-plan.md)
+
 ## WordPress.org Package
 
 The plugin source is structured as:
