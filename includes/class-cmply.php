@@ -391,8 +391,11 @@ final class CMPly_Cookie_Consent {
 				<?php endforeach; ?>
 			</nav>
 			<div class="cmply-plan">
-				<span><?php esc_html_e( 'Current plan:', 'cmply' ); ?> <strong><?php esc_html_e( 'Free', 'cmply' ); ?></strong></span>
-				<a class="cmply-button cmply-button-pro" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
+				<div class="cmply-plan-copy">
+					<span><?php esc_html_e( 'Current plan:', 'cmply' ); ?> <strong><?php esc_html_e( 'Free', 'cmply' ); ?></strong></span>
+					<small><?php esc_html_e( 'Pageviews used:', 'cmply' ); ?> <strong><?php esc_html_e( '0/5,000 (0%)', 'cmply' ); ?></strong></small>
+				</div>
+				<a class="cmply-button cmply-button-pro" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><span class="cmply-crown" aria-hidden="true">♕</span><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
 			</div>
 		</div>
 		<?php
@@ -701,7 +704,7 @@ final class CMPly_Cookie_Consent {
 				<li><?php esc_html_e( 'Geo-targeted cookie banners', 'cmply' ); ?></li>
 				<li><?php esc_html_e( 'Scheduled scans for automatic updates', 'cmply' ); ?></li>
 			</ul>
-			<a class="cmply-button cmply-button-primary" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
+			<a class="cmply-button cmply-button-primary cmply-upgrade-button" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><span class="cmply-crown" aria-hidden="true">♕</span><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
 		</div>
 		<?php
 	}

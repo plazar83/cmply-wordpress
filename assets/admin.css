@@ -47,6 +47,17 @@
 	gap: 12px;
 }
 
+.cmply-plan-copy {
+	display: grid;
+	gap: 2px;
+	text-align: right;
+}
+
+.cmply-plan-copy small {
+	color: #6b6f8c;
+	font-size: 12px;
+}
+
 .cmply-main-grid {
 	display: grid;
 	gap: 20px;
@@ -180,12 +191,20 @@
 .cmply-button-pro {
 	background: linear-gradient(90deg, #ff4d00, #ffc400);
 	color: #fff;
+	min-width: 166px;
+	justify-content: center;
 }
 
 .cmply-button-pro:hover,
 .cmply-button-pro:focus {
 	color: #fff;
 	filter: brightness(0.95);
+}
+
+.cmply-crown {
+	font-size: 15px;
+	line-height: 1;
+	margin-right: 6px;
 }
 
 .cmply-panel-heading {
@@ -374,6 +393,13 @@
 	font-weight: 700;
 	left: 0;
 	position: absolute;
+}
+
+.cmply-upgrade-button {
+	font-size: 16px;
+	min-height: 50px;
+	padding-left: 24px;
+	padding-right: 24px;
 }
 
 .cmply-faq {
