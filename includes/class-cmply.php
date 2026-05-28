@@ -49,8 +49,7 @@ final class CMPly_Cookie_Consent {
 		add_action( 'admin_notices', array( __CLASS__, 'configuration_notice' ) );
 		add_filter( 'plugin_action_links_' . CMPLY_COOKIE_CONSENT_BASENAME, array( __CLASS__, 'settings_link' ) );
 
-		add_action( 'wp_head', array( __CLASS__, 'print_sdk_script' ), 0 );
-		add_shortcode( 'cmply_revisit', array( __CLASS__, 'revisit_shortcode' ) );
+		add_action( 'wp_head', array( __CLASS__, 'print_sdk_script' ), -999 );
 	}
 
 	/**
@@ -141,7 +140,7 @@ final class CMPly_Cookie_Consent {
 		self::add_field( 'site_id', __( 'Site ID', 'cmply' ), 'render_site_id_field' );
 		self::add_field( 'sdk_base_url', __( 'SDK Base URL', 'cmply' ), 'render_sdk_base_url_field' );
 		self::add_field( 'sdk_version', __( 'SDK Version', 'cmply' ), 'render_sdk_version_field' );
-		self::add_field( 'language', __( 'Language', 'cmply' ), 'render_language_field' );
+		self::add_field( 'language', __( 'Language override', 'cmply' ), 'render_language_field' );
 		self::add_field( 'exclude_paths', __( 'Exclude Paths', 'cmply' ), 'render_exclude_paths_field' );
 	}
 
@@ -252,8 +251,8 @@ final class CMPly_Cookie_Consent {
 	public static function render_language_field() {
 		$options = self::options();
 		?>
-		<input class="small-text" type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[language]" value="<?php echo esc_attr( $options['language'] ); ?>" placeholder="en" />
-		<p class="description"><?php esc_html_e( 'Optional. Passes data-lang to CMPly, for example en, ru, de, fr, es, or it.', 'cmply' ); ?></p>
+		<input class="small-text" type="text" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[language]" value="<?php echo esc_attr( $options['language'] ); ?>" placeholder="auto" />
+		<p class="description"><?php esc_html_e( 'Leave empty to auto-detect each visitor browser language from CMPly dashboard translations. Set only to force a specific language, for example en, ru, de, fr, es, or it.', 'cmply' ); ?></p>
 		<?php
 	}
 
@@ -622,10 +621,6 @@ final class CMPly_Cookie_Consent {
 				<a href="https://cmply.app/terms" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'CMPly Terms', 'cmply' ); ?></a>
 			</p>
 
-			<hr />
-			<h2><?php esc_html_e( 'Revisit Consent Button', 'cmply' ); ?></h2>
-			<p><?php esc_html_e( 'Use this shortcode anywhere you want visitors to reopen preferences:', 'cmply' ); ?></p>
-			<code>[cmply_revisit label="Cookie settings"]</code>
 		</div>
 		<?php
 		self::render_admin_footer();
@@ -908,26 +903,4 @@ final class CMPly_Cookie_Consent {
 		return false;
 	}
 
-	/**
-	 * Render a button that opens CMPly preferences.
-	 *
-	 * @param array<string, mixed> $atts Shortcode attributes.
-	 * @return string
-	 */
-	public static function revisit_shortcode( $atts ) {
-		$atts = shortcode_atts(
-			array(
-				'label' => __( 'Cookie settings', 'cmply' ),
-				'class' => 'cmply-revisit-button',
-			),
-			$atts,
-			'cmply_revisit'
-		);
-
-		return sprintf(
-			'<button type="button" class="%1$s" onclick="window.CMPly && window.CMPly.showBanner && window.CMPly.showBanner();">%2$s</button>',
-			esc_attr( $atts['class'] ),
-			esc_html( $atts['label'] )
-		);
-	}
 }

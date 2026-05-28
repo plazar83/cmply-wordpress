@@ -14,7 +14,7 @@ Connect WordPress to CMPly.app for cookie consent, consent records, and consent-
 
 CMPly connects a WordPress site to CMPly.app.
 
-The plugin prints the CMPly SDK in the public `<head>` at priority 0 and intentionally does not add `defer` or `async`, matching CMPly's recommended integration for blocking third-party scripts before they execute.
+The plugin prints the CMPly SDK in the public `<head>` at a very early priority and intentionally does not add `defer` or `async`, matching CMPly's recommended integration for blocking third-party scripts before they execute.
 
 Features:
 
@@ -22,9 +22,8 @@ Features:
 * Site ID configuration in Settings > CMPly.
 * Production or staging SDK base URL.
 * Optional SDK version query for cache busting.
-* Optional `data-lang` support.
+* Optional language override with automatic browser-language detection by default.
 * URL path exclusions with wildcard support.
-* `[cmply_revisit]` shortcode for reopening cookie preferences.
 
 This plugin requires an active CMPly.app site configuration. CMPly provides the consent banner, consent storage, cookie/provider metadata, and related consent-management functionality.
 
@@ -69,12 +68,6 @@ CMPly must execute during HTML parsing so it can intercept and block third-party
 = How does the Connect button work? =
 
 The button opens the CMPly web app at `/integrations/wordpress/connect` with your WordPress site URL and a secure return URL. After you choose or create a site in CMPly, CMPly redirects back to WordPress with the Site ID, and the plugin saves it.
-
-= How do I add a cookie settings link? =
-
-Use the shortcode:
-
-`[cmply_revisit label="Cookie settings"]`
 
 = Can I disable CMPly on specific pages? =
 

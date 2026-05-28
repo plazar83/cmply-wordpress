@@ -12,8 +12,7 @@ The plugin is built for the WordPress.org plugin directory with the public plugi
 - `Connect to CMPly` flow for web-app authorization and automatic Site ID return.
 - Manual Site ID fallback.
 - Google Consent Mode overview screen.
-- Optional SDK base URL, SDK version query, language, and excluded paths.
-- `[cmply_revisit]` shortcode for reopening visitor preferences.
+- Optional SDK base URL, SDK version query, language override, and excluded paths.
 - WordPress.org-ready `readme.txt` with external service disclosure.
 
 ## Installation
