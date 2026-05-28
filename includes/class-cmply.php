@@ -23,6 +23,7 @@ final class CMPly_Cookie_Consent {
 	private static function defaults() {
 		return array(
 			'enabled'       => 1,
+			'auto_inject'   => 1,
 			'site_id'       => '',
 			'sdk_base_url'  => 'https://cmply.app',
 			'sdk_version'   => '',
@@ -137,6 +138,7 @@ final class CMPly_Cookie_Consent {
 		);
 
 		self::add_field( 'enabled', __( 'Enable CMPly', 'cmply' ), 'render_enabled_field' );
+		self::add_field( 'auto_inject', __( 'Auto-inject SDK', 'cmply' ), 'render_auto_inject_field' );
 		self::add_field( 'site_id', __( 'Site ID', 'cmply' ), 'render_site_id_field' );
 		self::add_field( 'sdk_base_url', __( 'SDK Base URL', 'cmply' ), 'render_sdk_base_url_field' );
 		self::add_field( 'sdk_version', __( 'SDK Version', 'cmply' ), 'render_sdk_version_field' );
@@ -171,16 +173,18 @@ final class CMPly_Cookie_Consent {
 	public static function sanitize_options( $input ) {
 		$input    = is_array( $input ) ? $input : array();
 		$defaults = self::defaults();
+		$current  = self::options();
 		$output   = array();
 
 		$output['enabled']       = empty( $input['enabled'] ) ? 0 : 1;
+		$output['auto_inject']   = empty( $input['auto_inject'] ) ? 0 : 1;
 		$output['site_id']       = isset( $input['site_id'] ) ? sanitize_text_field( wp_unslash( $input['site_id'] ) ) : '';
 		$output['sdk_base_url']  = isset( $input['sdk_base_url'] ) ? esc_url_raw( untrailingslashit( wp_unslash( $input['sdk_base_url'] ) ) ) : $defaults['sdk_base_url'];
 		$output['sdk_version']   = isset( $input['sdk_version'] ) ? preg_replace( '/[^a-zA-Z0-9._-]/', '', sanitize_text_field( wp_unslash( $input['sdk_version'] ) ) ) : '';
 		$output['language']      = isset( $input['language'] ) ? preg_replace( '/[^a-zA-Z_-]/', '', sanitize_text_field( wp_unslash( $input['language'] ) ) ) : '';
 		$output['exclude_paths'] = isset( $input['exclude_paths'] ) ? sanitize_textarea_field( wp_unslash( $input['exclude_paths'] ) ) : '';
-		$output['account_email'] = isset( $input['account_email'] ) ? sanitize_email( wp_unslash( $input['account_email'] ) ) : '';
-		$output['plan']          = isset( $input['plan'] ) ? sanitize_text_field( wp_unslash( $input['plan'] ) ) : 'Free';
+		$output['account_email'] = isset( $input['account_email'] ) ? sanitize_email( wp_unslash( $input['account_email'] ) ) : $current['account_email'];
+		$output['plan']          = isset( $input['plan'] ) ? sanitize_text_field( wp_unslash( $input['plan'] ) ) : $current['plan'];
 
 		if ( empty( $output['sdk_base_url'] ) ) {
 			$output['sdk_base_url'] = $defaults['sdk_base_url'];
@@ -201,6 +205,22 @@ final class CMPly_Cookie_Consent {
 			<input type="checkbox" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[enabled]" value="1" <?php checked( 1, (int) $options['enabled'] ); ?> />
 			<?php esc_html_e( 'Load CMPly on the public website', 'cmply' ); ?>
 		</label>
+		<?php
+	}
+
+	/**
+	 * Render auto-inject field.
+	 *
+	 * @return void
+	 */
+	public static function render_auto_inject_field() {
+		$options = self::options();
+		?>
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[auto_inject]" value="1" <?php checked( 1, (int) $options['auto_inject'] ); ?> />
+			<?php esc_html_e( 'Automatically print the CMPly SDK in wp_head', 'cmply' ); ?>
+		</label>
+		<p class="description"><?php esc_html_e( 'Turn this off only if the CMPly script is already inserted manually in your theme or header manager. Keep exactly one CMPly SDK script on the page.', 'cmply' ); ?></p>
 		<?php
 	}
 
@@ -408,6 +428,8 @@ final class CMPly_Cookie_Consent {
 	 */
 	private static function render_dashboard_screen( $options ) {
 		$is_connected = ! empty( $options['site_id'] );
+		$is_loading   = $is_connected && ! empty( $options['enabled'] ) && ! empty( $options['auto_inject'] );
+		$is_manual    = $is_connected && ! empty( $options['enabled'] ) && empty( $options['auto_inject'] );
 		?>
 		<div class="cmply-main-grid">
 			<div class="cmply-primary">
@@ -451,10 +473,10 @@ final class CMPly_Cookie_Consent {
 					</div>
 					<div class="cmply-overview">
 						<?php
-						self::render_overview_card( __( 'Banner status', 'cmply' ), $is_connected && ! empty( $options['enabled'] ) ? __( 'Active', 'cmply' ) : __( 'Inactive', 'cmply' ), 'banner', $is_connected && ! empty( $options['enabled'] ) );
+						self::render_overview_card( __( 'Banner status', 'cmply' ), $is_loading ? __( 'Active', 'cmply' ) : ( $is_manual ? __( 'Manual embed', 'cmply' ) : __( 'Inactive', 'cmply' ) ), 'banner', $is_loading );
 						self::render_overview_card( __( 'Regulation', 'cmply' ), __( 'GDPR', 'cmply' ), 'shield', true );
+						self::render_overview_card( __( 'SDK mode', 'cmply' ), empty( $options['auto_inject'] ) ? __( 'Manual', 'cmply' ) : __( 'Auto-inject', 'cmply' ), 'code', ! empty( $options['auto_inject'] ) );
 						self::render_overview_card( __( 'Language', 'cmply' ), ! empty( $options['language'] ) ? strtoupper( (string) $options['language'] ) : __( 'Auto-detect', 'cmply' ), 'language', true );
-						self::render_overview_card( __( 'Targeted location', 'cmply' ), __( 'Worldwide', 'cmply' ), 'target', true );
 						?>
 					</div>
 					<div class="cmply-panel-footer">
@@ -465,26 +487,26 @@ final class CMPly_Cookie_Consent {
 				<div class="cmply-card-grid">
 					<div class="cmply-panel">
 						<div class="cmply-panel-heading">
-							<h2><?php esc_html_e( 'Cookie Summary', 'cmply' ); ?></h2>
+							<h2><?php esc_html_e( 'Installation diagnostics', 'cmply' ); ?></h2>
 						</div>
 						<div class="cmply-summary-grid">
-							<?php self::render_stat( __( 'Total cookies', 'cmply' ), __( 'Available after scan', 'cmply' ), 'cookie' ); ?>
-							<?php self::render_stat( __( 'Categories', 'cmply' ), __( 'Managed in CMPly', 'cmply' ), 'grid' ); ?>
-							<?php self::render_stat( __( 'Last successful scan', 'cmply' ), __( 'Run in web app', 'cmply' ), 'search' ); ?>
-							<?php self::render_stat( __( 'Pages scanned', 'cmply' ), __( 'Managed in CMPly', 'cmply' ), 'document' ); ?>
+							<?php self::render_stat( __( 'Plugin status', 'cmply' ), empty( $options['enabled'] ) ? __( 'Disabled', 'cmply' ) : __( 'Enabled', 'cmply' ), 'banner' ); ?>
+							<?php self::render_stat( __( 'Site ID', 'cmply' ), $is_connected ? __( 'Configured', 'cmply' ) : __( 'Missing', 'cmply' ), 'document' ); ?>
+							<?php self::render_stat( __( 'SDK output', 'cmply' ), empty( $options['auto_inject'] ) ? __( 'Manual embed', 'cmply' ) : __( 'Auto-inject', 'cmply' ), 'code' ); ?>
+							<?php self::render_stat( __( 'Excluded paths', 'cmply' ), empty( $options['exclude_paths'] ) ? __( 'None', 'cmply' ) : __( 'Configured', 'cmply' ), 'target' ); ?>
 						</div>
 					</div>
 
 					<div class="cmply-panel">
 						<div class="cmply-panel-heading">
-							<h2><?php esc_html_e( 'Consent trends', 'cmply' ); ?> <span><?php esc_html_e( 'Last 7 days', 'cmply' ); ?></span></h2>
+							<h2><?php esc_html_e( 'CMPly web app', 'cmply' ); ?></h2>
 						</div>
-						<div class="cmply-empty-chart">
-							<div class="cmply-empty-icon">○</div>
-							<p><?php esc_html_e( 'Consent analytics are available in the CMPly web app.', 'cmply' ); ?></p>
+						<div class="cmply-webapp-card">
+							<p><?php esc_html_e( 'Banner design, cookie scans, translations, consent records, analytics, and Google Consent Mode settings are managed in CMPly.', 'cmply' ); ?></p>
+							<p><?php esc_html_e( 'This WordPress plugin focuses on connecting the site and loading the SDK safely.', 'cmply' ); ?></p>
 						</div>
 						<div class="cmply-panel-footer">
-							<a href="https://cmply.app/dashboard" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View All', 'cmply' ); ?></a>
+							<a href="https://cmply.app/dashboard" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open Web App', 'cmply' ); ?></a>
 						</div>
 					</div>
 				</div>
@@ -519,7 +541,7 @@ final class CMPly_Cookie_Consent {
 				</div>
 				<div>
 					<span class="cmply-toggle" aria-hidden="true"></span>
-					<p><?php esc_html_e( 'CMPly can implement Google Consent Mode from your CMPly site settings. The WordPress plugin loads the SDK early so consent defaults can run before tags.', 'cmply' ); ?></p>
+					<p><?php esc_html_e( 'CMPly can implement Google Consent Mode from your CMPly site settings. When auto-inject is enabled, the WordPress plugin loads the SDK early so consent defaults can run before tags.', 'cmply' ); ?></p>
 				</div>
 			</div>
 
@@ -555,13 +577,6 @@ final class CMPly_Cookie_Consent {
 
 			<a class="cmply-button cmply-button-primary" href="https://cmply.app/dashboard" target="_blank" rel="noopener noreferrer"><?php esc_html_e( '+ New Region', 'cmply' ); ?></a>
 
-			<hr />
-
-			<h2><?php esc_html_e( 'Other settings', 'cmply' ); ?></h2>
-			<div class="cmply-setting-row">
-				<div><?php esc_html_e( 'SDK connection', 'cmply' ); ?></div>
-				<div><code><?php echo esc_html( empty( $options['site_id'] ) ? __( 'Add a Site ID first', 'cmply' ) : self::script_tag( self::sdk_url( $options ), $options ) ); ?></code></div>
-			</div>
 		</div>
 		<?php
 		self::render_admin_footer();
@@ -607,7 +622,15 @@ final class CMPly_Cookie_Consent {
 			<?php if ( ! empty( $options['site_id'] ) ) : ?>
 				<hr />
 				<h2><?php esc_html_e( 'Current Embed Code', 'cmply' ); ?></h2>
-				<p><?php esc_html_e( 'CMPly is inserted automatically. This is the equivalent script tag:', 'cmply' ); ?></p>
+				<p>
+					<?php
+					echo esc_html(
+						empty( $options['auto_inject'] )
+							? __( 'Auto-inject is disabled. Add this script manually near the top of the document head and keep only one CMPly SDK script on the page:', 'cmply' )
+							: __( 'CMPly is inserted automatically. This is the equivalent script tag:', 'cmply' )
+					);
+					?>
+				</p>
 				<textarea class="large-text code cmply-code" rows="4" readonly><?php echo esc_textarea( self::script_tag( $script_url, $options ) ); ?></textarea>
 				<p class="description"><?php esc_html_e( 'Do not add defer or async. CMPly must execute before other third-party scripts.', 'cmply' ); ?></p>
 			<?php endif; ?>
@@ -791,7 +814,7 @@ final class CMPly_Cookie_Consent {
 	 */
 	public static function print_sdk_script() {
 		$options = self::options();
-		if ( empty( $options['enabled'] ) || empty( $options['site_id'] ) || is_admin() || self::is_excluded_path( $options ) ) {
+		if ( empty( $options['enabled'] ) || empty( $options['auto_inject'] ) || empty( $options['site_id'] ) || is_admin() || self::is_excluded_path( $options ) ) {
 			return;
 		}
 

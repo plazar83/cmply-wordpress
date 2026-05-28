@@ -12,6 +12,7 @@ The plugin is built for the WordPress.org plugin directory with the public plugi
 - `Connect to CMPly` flow for web-app authorization and automatic Site ID return.
 - Manual Site ID fallback.
 - Google Consent Mode overview screen.
+- Auto-inject or manual embed mode for the CMPly SDK.
 - Optional SDK base URL, SDK version query, language override, and excluded paths.
 - WordPress.org-ready `readme.txt` with external service disclosure.
 
@@ -33,6 +34,8 @@ The plugin stores configuration in the WordPress database and prints the CMPly S
 
 The SDK then loads CMPly settings and consent data from `cmply.app` in the visitor's browser.
 
+If the SDK is already inserted manually in the theme or a header manager, turn off **Auto-inject SDK** in Settings > CMPly and keep only one CMPly SDK script on the page.
+
 ## Connect Button Backend Requirement
 
 The WordPress plugin already points the connect button to:
@@ -44,6 +47,12 @@ https://cmply.app/integrations/wordpress/connect
 The CMPly web app still needs to implement that route. See:
 
 [docs/cmply-app-wordpress-connect.md](docs/cmply-app-wordpress-connect.md)
+
+## Future Plugin API Requirements
+
+The endpoints needed for editable WordPress-side settings, GCM controls, analytics summaries, usage, and secure connection tokens are documented here:
+
+[docs/plugin-endpoints.md](docs/plugin-endpoints.md)
 
 ## Pricing Recommendation
 
@@ -81,7 +90,7 @@ cmply
 
 ## Validation
 
-PHP syntax has been checked with PHP 8.2 for:
+Before release, check PHP syntax with PHP 8.2 or newer for:
 
 - `cmply.php`
 - `includes/class-cmply.php`

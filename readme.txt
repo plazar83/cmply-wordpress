@@ -20,6 +20,7 @@ Features:
 
 * Connect button for CMPly web app authorization and automatic Site ID return.
 * Site ID configuration in Settings > CMPly.
+* Auto-inject or manual embed mode for the CMPly SDK.
 * Production or staging SDK base URL.
 * Optional SDK version query for cache busting.
 * Optional language override with automatic browser-language detection by default.
@@ -64,6 +65,10 @@ Service links:
 = Why is the script not loaded with defer? =
 
 CMPly must execute during HTML parsing so it can intercept and block third-party scripts before they run. Adding `defer` or `async` would make blocking less reliable.
+
+= What if I already added the CMPly script manually? =
+
+Turn off Auto-inject SDK in Settings > CMPly and keep the manual script near the top of the document head. Keep only one CMPly SDK script on the page.
 
 = How does the Connect button work? =
 
