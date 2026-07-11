@@ -303,6 +303,11 @@
 	width: 14px;
 }
 
+.cmply-notice {
+	box-sizing: border-box;
+	margin: 16px 20px 0;
+}
+
 .cmply-icon-document::before {
 	background: #0b74ff;
 	content: "";

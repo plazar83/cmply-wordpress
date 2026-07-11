@@ -314,6 +314,7 @@ final class CMPly_Cookie_Consent {
 		<div class="wrap cmply-admin">
 			<div class="cmply-shell">
 				<?php self::render_header( $tab, $options ); ?>
+				<?php self::render_connection_notice( $options ); ?>
 
 				<?php
 				if ( 'gcm' === $tab ) {
@@ -383,8 +384,15 @@ final class CMPly_Cookie_Consent {
 			)
 		);
 
-		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=exchange_failed' ) );
+		if ( is_wp_error( $response ) ) {
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=service_unavailable' ) );
+			exit;
+		}
+
+		$response_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $response_code ) {
+			$error = in_array( $response_code, array( 409, 410 ), true ) ? 'exchange_expired' : 'exchange_failed';
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=' . $error ) );
 			exit;
 		}
 
@@ -483,6 +491,51 @@ final class CMPly_Cookie_Consent {
 	}
 
 	/**
+	 * Show connection results and actionable errors.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return void
+	 */
+	private static function render_connection_notice( $options ) {
+		$error = isset( $_GET['cmply_error'] ) ? sanitize_key( wp_unslash( $_GET['cmply_error'] ) ) : '';
+		$messages = array(
+			'missing_site_id'     => __( 'The callback data was incomplete. Start the connection again.', 'cmply' ),
+			'service_unavailable' => __( 'WordPress could not reach CMPly. Check outbound HTTPS access and try again.', 'cmply' ),
+			'exchange_expired'    => __( 'The connection code expired or was already used. Start the connection again.', 'cmply' ),
+			'exchange_failed'     => __( 'CMPly rejected the request. Confirm that the selected CMPly site matches this WordPress domain.', 'cmply' ),
+			'invalid_exchange'    => __( 'CMPly returned an invalid response. No connection credentials were saved.', 'cmply' ),
+			'not_connected'       => __( 'This site has only a manual Site ID. Use Connect to CMPly to link an account.', 'cmply' ),
+			'invalid_service_url' => __( 'The configured CMPly service URL is invalid.', 'cmply' ),
+			'verify_failed'       => __( 'The saved connection could not be verified. Reconnect the site to refresh its credentials.', 'cmply' ),
+		);
+
+		if ( $error && isset( $messages[ $error ] ) ) {
+			printf( '<div class="notice notice-error inline cmply-notice"><p><strong>%s</strong> %s</p></div>', esc_html__( 'Connection failed.', 'cmply' ), esc_html( $messages[ $error ] ) );
+			return;
+		}
+
+		if ( isset( $_GET['cmply_connected'] ) ) {
+			echo '<div class="notice notice-success inline cmply-notice"><p>' . esc_html__( 'CMPly connected successfully. Plan and pageview usage were synchronized.', 'cmply' ) . '</p></div>';
+		} elseif ( isset( $_GET['cmply_verified'] ) ) {
+			echo '<div class="notice notice-success inline cmply-notice"><p>' . esc_html__( 'CMPly connection verified and account information refreshed.', 'cmply' ) . '</p></div>';
+		} elseif ( isset( $_GET['cmply_disconnected'] ) ) {
+			echo '<div class="notice notice-success inline cmply-notice"><p>' . esc_html__( 'CMPly disconnected and saved credentials removed.', 'cmply' ) . '</p></div>';
+		} elseif ( ! empty( $options['site_id'] ) && ! self::has_account_connection( $options ) ) {
+			echo '<div class="notice notice-warning inline cmply-notice"><p><strong>' . esc_html__( 'Manual configuration.', 'cmply' ) . '</strong> ' . esc_html__( 'The SDK can use this Site ID, but no CMPly account is connected. Plan, usage, and verification are unavailable.', 'cmply' ) . '</p></div>';
+		}
+	}
+
+	/**
+	 * Check whether server-side account credentials exist.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return bool
+	 */
+	private static function has_account_connection( $options ) {
+		return ! empty( $options['site_id'] ) && ! empty( $options['connection_id'] ) && ! empty( get_option( self::SECRET_OPTION_NAME, '' ) );
+	}
+
+	/**
 	 * Render CookieYes-style header tabs.
 	 *
 	 * @param string               $active_tab Active tab.
@@ -529,9 +582,10 @@ final class CMPly_Cookie_Consent {
 	 * @return void
 	 */
 	private static function render_dashboard_screen( $options ) {
-		$is_connected = ! empty( $options['site_id'] );
-		$is_loading   = $is_connected && ! empty( $options['enabled'] ) && ! empty( $options['auto_inject'] );
-		$is_manual    = $is_connected && ! empty( $options['enabled'] ) && empty( $options['auto_inject'] );
+		$is_configured = ! empty( $options['site_id'] );
+		$is_connected  = self::has_account_connection( $options );
+		$is_loading    = $is_configured && ! empty( $options['enabled'] ) && ! empty( $options['auto_inject'] );
+		$is_manual     = $is_configured && ! empty( $options['enabled'] ) && empty( $options['auto_inject'] );
 		?>
 		<div class="cmply-main-grid">
 			<div class="cmply-primary">
@@ -544,7 +598,7 @@ final class CMPly_Cookie_Consent {
 						echo esc_html(
 							$is_connected
 								? __( 'Your website is connected to CMPly', 'cmply' )
-								: __( 'Connect your website to CMPly', 'cmply' )
+								: ( $is_configured ? __( 'CMPly is configured manually', 'cmply' ) : __( 'Connect your website to CMPly', 'cmply' ) )
 						);
 						?>
 					</h2>
@@ -593,7 +647,7 @@ final class CMPly_Cookie_Consent {
 						</div>
 						<div class="cmply-summary-grid">
 							<?php self::render_stat( __( 'Plugin status', 'cmply' ), empty( $options['enabled'] ) ? __( 'Disabled', 'cmply' ) : __( 'Enabled', 'cmply' ), 'banner' ); ?>
-							<?php self::render_stat( __( 'Site ID', 'cmply' ), $is_connected ? __( 'Configured', 'cmply' ) : __( 'Missing', 'cmply' ), 'document' ); ?>
+							<?php self::render_stat( __( 'Site ID', 'cmply' ), $is_configured ? __( 'Configured', 'cmply' ) : __( 'Missing', 'cmply' ), 'document' ); ?>
 							<?php self::render_stat( __( 'SDK output', 'cmply' ), empty( $options['auto_inject'] ) ? __( 'Manual embed', 'cmply' ) : __( 'Auto-inject', 'cmply' ), 'code' ); ?>
 							<?php self::render_stat( __( 'Excluded paths', 'cmply' ), empty( $options['exclude_paths'] ) ? __( 'None', 'cmply' ) : __( 'Configured', 'cmply' ), 'target' ); ?>
 						</div>
@@ -692,7 +746,8 @@ final class CMPly_Cookie_Consent {
 	 */
 	private static function render_site_settings_screen( $options ) {
 		$script_url   = self::sdk_url( $options );
-		$is_connected = ! empty( $options['site_id'] );
+		$is_configured = ! empty( $options['site_id'] );
+		$is_connected  = self::has_account_connection( $options );
 		?>
 		<div class="cmply-panel">
 			<div class="cmply-titlebar">
@@ -702,12 +757,12 @@ final class CMPly_Cookie_Consent {
 			<div class="cmply-connect-box">
 				<h2>
 					<span class="<?php echo esc_attr( $is_connected ? 'cmply-status-dot is-ok' : 'cmply-status-dot is-warn' ); ?>"></span>
-					<?php echo esc_html( $is_connected ? __( 'Your website is connected to CMPly', 'cmply' ) : __( 'Connect this website to CMPly', 'cmply' ) ); ?>
+					<?php echo esc_html( $is_connected ? __( 'Your website is connected to CMPly', 'cmply' ) : ( $is_configured ? __( 'Site ID configured manually — account not connected', 'cmply' ) : __( 'Connect this website to CMPly', 'cmply' ) ) ); ?>
 				</h2>
 				<p><?php esc_html_e( 'Use the connection button to sign in to CMPly, choose a site, and return with the Site ID filled automatically. Manual Site ID entry remains available below.', 'cmply' ); ?></p>
 				<div class="cmply-actions">
 					<a class="cmply-button cmply-button-primary" href="<?php echo esc_url( self::connect_url( $options ) ); ?>"><?php echo esc_html( $is_connected ? __( 'Reconnect', 'cmply' ) : __( 'Connect to CMPly', 'cmply' ) ); ?></a>
-					<?php if ( $is_connected ) : ?>
+					<?php if ( $is_configured ) : ?>
 						<a class="cmply-button cmply-button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cmply_verify_connection' ), 'cmply_verify_connection' ) ); ?>"><?php esc_html_e( 'Verify connection', 'cmply' ); ?></a>
 						<a class="cmply-button cmply-button-danger" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cmply_disconnect' ), 'cmply_disconnect' ) ); ?>"><?php esc_html_e( 'Disconnect', 'cmply' ); ?></a>
 					<?php endif; ?>
