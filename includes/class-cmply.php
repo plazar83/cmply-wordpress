@@ -1043,17 +1043,10 @@ final class CMPly_Cookie_Consent {
 	 * @return string
 	 */
 	private static function create_connection_state() {
-		$state = wp_generate_password( 48, false, false );
-		update_user_meta(
-			get_current_user_id(),
-			'cmply_connection_state',
-			array(
-				'hash'      => hash( 'sha256', $state ),
-				'expires_at' => time() + ( 30 * MINUTE_IN_SECONDS ),
-			)
-		);
+		$payload   = get_current_user_id() . '.' . ( time() + ( 30 * MINUTE_IN_SECONDS ) ) . '.' . wp_generate_password( 20, false, false );
+		$signature = hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
 
-		return $state;
+		return $payload . '.' . $signature;
 	}
 
 	/**
@@ -1063,21 +1056,24 @@ final class CMPly_Cookie_Consent {
 	 * @return bool
 	 */
 	private static function consume_connection_state( $state ) {
-		if ( empty( $state ) || strlen( $state ) > 100 ) {
+		if ( empty( $state ) || strlen( $state ) > 200 ) {
 			return false;
 		}
 
-		$user_id = get_current_user_id();
-		$stored  = get_user_meta( $user_id, 'cmply_connection_state', true );
-		delete_user_meta( $user_id, 'cmply_connection_state' );
-
-		if ( ! is_array( $stored ) || empty( $stored['hash'] ) || empty( $stored['expires_at'] ) || time() > (int) $stored['expires_at'] ) {
+		$parts = explode( '.', $state );
+		if ( 4 !== count( $parts ) ) {
 			return false;
 		}
 
-		$received_hash = hash( 'sha256', $state );
+		list( $user_id, $expires_at, $random, $signature ) = $parts;
+		if ( ! ctype_digit( $user_id ) || ! ctype_digit( $expires_at ) || empty( $random ) || time() > (int) $expires_at || (int) $user_id !== get_current_user_id() ) {
+			return false;
+		}
 
-		return hash_equals( (string) $stored['hash'], $received_hash );
+		$payload  = $user_id . '.' . $expires_at . '.' . $random;
+		$expected = hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+
+		return hash_equals( $expected, $signature );
 	}
 
 	/**
