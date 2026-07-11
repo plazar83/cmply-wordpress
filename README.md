@@ -10,6 +10,7 @@ The plugin is built for the WordPress.org plugin directory with the public plugi
 - Early script loading without `defer` or `async` so CMPly can block third-party scripts before they run.
 - WordPress admin dashboard inspired by CookieYes-style plugin screens.
 - `Connect to CMPly` flow with a short-lived one-time code and server-side credential exchange.
+- Current plan and monthly pageview usage synchronized on connect and verification.
 - Manual Site ID fallback.
 - Google Consent Mode overview screen.
 - Auto-inject or manual embed mode for the CMPly SDK.

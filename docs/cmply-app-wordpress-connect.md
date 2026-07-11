@@ -39,6 +39,7 @@ Expected behavior:
 5. Create a ten-minute, single-use connection code.
 6. Redirect back with `site_id`, `connection_id`, `connection_code`, and the fixed CMPly `exchange_url`.
 7. WordPress exchanges the code server-to-server and stores the returned API key as a non-autoloaded option.
+8. The exchange response includes the current account email, plan, pageviews used this month, and plan pageview limit.
 
 ## Query Parameters From Plugin
 

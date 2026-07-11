@@ -19,6 +19,7 @@ The plugin prints the CMPly SDK in the public `<head>` at a very early priority 
 Features:
 
 * Connect button with a short-lived, one-time server-to-server authorization exchange.
+* Live account plan and monthly pageview usage synchronized on connect and verification.
 * Site ID configuration in Settings > CMPly.
 * Auto-inject or manual embed mode for the CMPly SDK.
 * HTTPS SDK loading from the official CMPly.app service.
@@ -91,3 +92,4 @@ The WordPress plugin stores only its admin settings in the WordPress database. T
 = 1.0.0 =
 * Initial release.
 * Added one-time connection exchange and server-side connection verification.
+* Added live plan and pageview usage synchronization from CMPly.

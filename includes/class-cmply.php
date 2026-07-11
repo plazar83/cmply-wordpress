@@ -33,6 +33,8 @@ final class CMPly_Cookie_Consent {
 			'exclude_paths' => '',
 			'account_email' => '',
 			'plan'          => 'Free',
+			'pageviews_used'  => 0,
+			'pageviews_limit' => 0,
 			'connection_id' => '',
 		);
 	}
@@ -189,6 +191,8 @@ final class CMPly_Cookie_Consent {
 		$output['exclude_paths'] = isset( $input['exclude_paths'] ) ? sanitize_textarea_field( wp_unslash( $input['exclude_paths'] ) ) : '';
 		$output['account_email'] = isset( $input['account_email'] ) ? sanitize_email( wp_unslash( $input['account_email'] ) ) : $current['account_email'];
 		$output['plan']          = isset( $input['plan'] ) ? sanitize_text_field( wp_unslash( $input['plan'] ) ) : $current['plan'];
+		$output['pageviews_used']  = max( 0, (int) $current['pageviews_used'] );
+		$output['pageviews_limit'] = (int) $current['pageviews_limit'];
 		$output['connection_id'] = $current['connection_id'];
 
 		if ( empty( $output['sdk_base_url'] ) ) {
@@ -309,7 +313,7 @@ final class CMPly_Cookie_Consent {
 		?>
 		<div class="wrap cmply-admin">
 			<div class="cmply-shell">
-				<?php self::render_header( $tab ); ?>
+				<?php self::render_header( $tab, $options ); ?>
 
 				<?php
 				if ( 'gcm' === $tab ) {
@@ -394,8 +398,7 @@ final class CMPly_Cookie_Consent {
 		$options['site_id']       = $site_id;
 		$options['connection_id'] = $connection_id;
 		self::save_api_key( sanitize_text_field( $payload['data']['apiKey'] ) );
-		$options['account_email'] = isset( $_GET['email'] ) ? sanitize_email( wp_unslash( $_GET['email'] ) ) : $options['account_email'];
-		$options['plan']          = isset( $_GET['plan'] ) ? sanitize_text_field( wp_unslash( $_GET['plan'] ) ) : $options['plan'];
+		self::apply_account_snapshot( $options, $payload['data']['account'] ?? array() );
 
 		update_option( self::OPTION_NAME, $options );
 
@@ -419,6 +422,8 @@ final class CMPly_Cookie_Consent {
 		$options['site_id']       = '';
 		$options['account_email'] = '';
 		$options['plan']          = 'Free';
+		$options['pageviews_used']  = 0;
+		$options['pageviews_limit'] = 0;
 		$options['connection_id'] = '';
 		delete_option( self::SECRET_OPTION_NAME );
 
@@ -464,7 +469,15 @@ final class CMPly_Cookie_Consent {
 				),
 			)
 		);
-		$status = ! is_wp_error( $response ) && 200 === wp_remote_retrieve_response_code( $response ) ? 'cmply_verified=1' : 'cmply_error=verify_failed';
+		$status = 'cmply_error=verify_failed';
+		if ( ! is_wp_error( $response ) && 200 === wp_remote_retrieve_response_code( $response ) ) {
+			$payload = json_decode( wp_remote_retrieve_body( $response ), true );
+			if ( is_array( $payload ) && ! empty( $payload['ok'] ) && ! empty( $payload['data']['account'] ) ) {
+				self::apply_account_snapshot( $options, $payload['data']['account'] );
+				update_option( self::OPTION_NAME, $options );
+				$status = 'cmply_verified=1';
+			}
+		}
 		wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&' . $status ) );
 		exit;
 	}
@@ -472,15 +485,23 @@ final class CMPly_Cookie_Consent {
 	/**
 	 * Render CookieYes-style header tabs.
 	 *
-	 * @param string $active_tab Active tab.
+	 * @param string               $active_tab Active tab.
+	 * @param array<string, mixed> $options Plugin options.
 	 * @return void
 	 */
-	private static function render_header( $active_tab ) {
+	private static function render_header( $active_tab, $options ) {
 		$tabs = array(
 			'dashboard'     => __( 'Dashboard', 'cmply' ),
 			'gcm'           => __( 'Google Consent Mode (GCM)', 'cmply' ),
 			'site-settings' => __( 'Site Settings', 'cmply' ),
 		);
+		$plan            = ucfirst( sanitize_key( (string) $options['plan'] ) );
+		$pageviews_used  = max( 0, (int) $options['pageviews_used'] );
+		$pageviews_limit = (int) $options['pageviews_limit'];
+		$percentage      = $pageviews_limit > 0 ? min( 100, (int) round( ( $pageviews_used / $pageviews_limit ) * 100 ) ) : 0;
+		$usage_label     = $pageviews_limit < 0
+			? sprintf( /* translators: %s: pageviews used */ __( '%s / Unlimited', 'cmply' ), number_format_i18n( $pageviews_used ) )
+			: sprintf( /* translators: 1: pageviews used, 2: pageview limit, 3: percentage */ __( '%1$s / %2$s (%3$d%%)', 'cmply' ), number_format_i18n( $pageviews_used ), number_format_i18n( max( 0, $pageviews_limit ) ), $percentage );
 		?>
 		<div class="cmply-topbar">
 			<nav class="cmply-tabs" aria-label="<?php esc_attr_e( 'CMPly sections', 'cmply' ); ?>">
@@ -492,8 +513,8 @@ final class CMPly_Cookie_Consent {
 			</nav>
 			<div class="cmply-plan">
 				<div class="cmply-plan-copy">
-					<span><?php esc_html_e( 'Current plan:', 'cmply' ); ?> <strong><?php esc_html_e( 'Free', 'cmply' ); ?></strong></span>
-					<small><?php esc_html_e( 'Pageviews used:', 'cmply' ); ?> <strong><?php esc_html_e( '0/5,000 (0%)', 'cmply' ); ?></strong></small>
+					<span><?php esc_html_e( 'Current plan:', 'cmply' ); ?> <strong><?php echo esc_html( $plan ); ?></strong></span>
+					<small><?php esc_html_e( 'Pageviews used:', 'cmply' ); ?> <strong><?php echo esc_html( $usage_label ); ?></strong></small>
 				</div>
 				<a class="cmply-button cmply-button-pro" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><span class="cmply-crown" aria-hidden="true">♕</span><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
 			</div>
@@ -992,6 +1013,24 @@ final class CMPly_Cookie_Consent {
 	private static function save_api_key( $api_key ) {
 		delete_option( self::SECRET_OPTION_NAME );
 		add_option( self::SECRET_OPTION_NAME, $api_key, '', false );
+	}
+
+	/**
+	 * Apply an account snapshot received from CMPly.
+	 *
+	 * @param array<string, mixed> $options Account options, passed by reference.
+	 * @param mixed                $account Raw account snapshot.
+	 * @return void
+	 */
+	private static function apply_account_snapshot( &$options, $account ) {
+		if ( ! is_array( $account ) ) {
+			return;
+		}
+
+		$options['account_email']   = isset( $account['email'] ) ? sanitize_email( $account['email'] ) : '';
+		$options['plan']            = isset( $account['plan'] ) ? sanitize_key( $account['plan'] ) : 'free';
+		$options['pageviews_used']  = isset( $account['pageViewsUsed'] ) ? max( 0, (int) $account['pageViewsUsed'] ) : 0;
+		$options['pageviews_limit'] = isset( $account['pageViewsLimit'] ) ? (int) $account['pageViewsLimit'] : 0;
 	}
 
 	/**
