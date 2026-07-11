@@ -355,8 +355,8 @@ final class CMPly_Cookie_Consent {
 			wp_die( esc_html__( 'You do not have permission to connect CMPly.', 'cmply' ) );
 		}
 
-		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
-		if ( ! wp_verify_nonce( $nonce, 'cmply_connect' ) ) {
+		$state = isset( $_GET['cmply_state'] ) ? sanitize_text_field( wp_unslash( $_GET['cmply_state'] ) ) : '';
+		if ( ! self::consume_connection_state( $state ) ) {
 			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=callback_expired' ) );
 			exit;
 		}
@@ -1016,9 +1016,10 @@ final class CMPly_Cookie_Consent {
 	 */
 	private static function connect_url( $options ) {
 		$base_url   = self::sanitize_service_url( (string) $options['sdk_base_url'] );
+		$state      = self::create_connection_state();
 		$return_url = add_query_arg(
-			'_wpnonce',
-			wp_create_nonce( 'cmply_connect' ),
+			'cmply_state',
+			$state,
 			admin_url( 'admin-post.php?action=cmply_connect_callback' )
 		);
 
@@ -1034,6 +1035,38 @@ final class CMPly_Cookie_Consent {
 		);
 
 		return esc_url( $url );
+	}
+
+	/**
+	 * Create a one-time state token for the external connection round trip.
+	 *
+	 * @return string
+	 */
+	private static function create_connection_state() {
+		$state = wp_generate_password( 48, false, false );
+		$key   = 'cmply_connect_' . hash( 'sha256', $state );
+
+		set_transient( $key, get_current_user_id(), 30 * MINUTE_IN_SECONDS );
+
+		return $state;
+	}
+
+	/**
+	 * Validate and consume a one-time connection state token.
+	 *
+	 * @param string $state State token returned by CMPly.
+	 * @return bool
+	 */
+	private static function consume_connection_state( $state ) {
+		if ( empty( $state ) || strlen( $state ) > 100 ) {
+			return false;
+		}
+
+		$key     = 'cmply_connect_' . hash( 'sha256', $state );
+		$user_id = get_transient( $key );
+		delete_transient( $key );
+
+		return false !== $user_id && (int) $user_id === get_current_user_id();
 	}
 
 	/**
