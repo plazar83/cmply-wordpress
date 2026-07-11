@@ -198,9 +198,9 @@ final class CMPly_Cookie_Consent {
 		$output['exclude_paths'] = isset( $input['exclude_paths'] ) ? sanitize_textarea_field( wp_unslash( $input['exclude_paths'] ) ) : '';
 		$output['account_email'] = isset( $input['account_email'] ) ? sanitize_email( wp_unslash( $input['account_email'] ) ) : $current['account_email'];
 		$output['plan']          = isset( $input['plan'] ) ? sanitize_text_field( wp_unslash( $input['plan'] ) ) : $current['plan'];
-		$output['pageviews_used']  = max( 0, (int) $current['pageviews_used'] );
-		$output['pageviews_limit'] = (int) $current['pageviews_limit'];
-		$output['connection_id'] = $current['connection_id'];
+		$output['pageviews_used']  = isset( $input['pageviews_used'] ) ? max( 0, (int) $input['pageviews_used'] ) : max( 0, (int) $current['pageviews_used'] );
+		$output['pageviews_limit'] = isset( $input['pageviews_limit'] ) ? max( -1, (int) $input['pageviews_limit'] ) : (int) $current['pageviews_limit'];
+		$output['connection_id']   = isset( $input['connection_id'] ) ? sanitize_text_field( $input['connection_id'] ) : $current['connection_id'];
 
 		if ( empty( $output['sdk_base_url'] ) ) {
 			$output['sdk_base_url'] = $defaults['sdk_base_url'];
@@ -716,7 +716,9 @@ final class CMPly_Cookie_Consent {
 			</div>
 
 			<aside class="cmply-sidebar">
-				<?php self::render_upgrade_card(); ?>
+				<?php if ( 'free' === strtolower( (string) $options['plan'] ) ) : ?>
+					<?php self::render_upgrade_card(); ?>
+				<?php endif; ?>
 				<?php self::render_faq_card(); ?>
 			</aside>
 		</div>
