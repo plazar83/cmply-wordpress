@@ -93,10 +93,12 @@ $sanitized = CMPly_Cookie_Consent::sanitize_options(
 		'pageviews_used'  => 2443,
 		'pageviews_limit' => 750000,
 		'connection_id'   => 'connection-123',
+		'last_synced_at'  => 123456,
 	)
 );
 assert_state( 2443 === $sanitized['pageviews_used'], 'fresh pageview usage must survive sanitization' );
 assert_state( 750000 === $sanitized['pageviews_limit'], 'fresh pageview limit must survive sanitization' );
 assert_state( 'connection-123' === $sanitized['connection_id'], 'fresh connection ID must survive sanitization' );
+assert_state( 123456 === $sanitized['last_synced_at'], 'last sync time must survive sanitization' );
 
 echo "Connection state tests passed.\n";

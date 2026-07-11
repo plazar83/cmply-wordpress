@@ -38,6 +38,7 @@ final class CMPly_Cookie_Consent {
 			'pageviews_used'  => 0,
 			'pageviews_limit' => 0,
 			'connection_id' => '',
+			'last_synced_at' => 0,
 		);
 	}
 
@@ -52,6 +53,7 @@ final class CMPly_Cookie_Consent {
 		add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
+		add_action( 'load-settings_page_cmply', array( __CLASS__, 'maybe_refresh_account_snapshot' ) );
 		add_action( 'admin_post_cmply_connect_callback', array( __CLASS__, 'handle_connect_callback' ) );
 		add_action( 'admin_post_cmply_disconnect', array( __CLASS__, 'handle_disconnect' ) );
 		add_action( 'admin_post_cmply_verify_connection', array( __CLASS__, 'handle_verify_connection' ) );
@@ -201,6 +203,7 @@ final class CMPly_Cookie_Consent {
 		$output['pageviews_used']  = isset( $input['pageviews_used'] ) ? max( 0, (int) $input['pageviews_used'] ) : max( 0, (int) $current['pageviews_used'] );
 		$output['pageviews_limit'] = isset( $input['pageviews_limit'] ) ? max( -1, (int) $input['pageviews_limit'] ) : (int) $current['pageviews_limit'];
 		$output['connection_id']   = isset( $input['connection_id'] ) ? sanitize_text_field( $input['connection_id'] ) : $current['connection_id'];
+		$output['last_synced_at']  = isset( $input['last_synced_at'] ) ? max( 0, (int) $input['last_synced_at'] ) : max( 0, (int) $current['last_synced_at'] );
 
 		if ( empty( $output['sdk_base_url'] ) ) {
 			$output['sdk_base_url'] = $defaults['sdk_base_url'];
@@ -431,6 +434,7 @@ final class CMPly_Cookie_Consent {
 		self::save_connection_id( $connection_id );
 		self::save_api_key( sanitize_text_field( $payload['data']['apiKey'] ) );
 		self::apply_account_snapshot( $options, $payload['data']['account'] ?? array() );
+		$options['last_synced_at'] = time();
 
 		update_option( self::OPTION_NAME, $options );
 
@@ -457,6 +461,7 @@ final class CMPly_Cookie_Consent {
 		$options['pageviews_used']  = 0;
 		$options['pageviews_limit'] = 0;
 		$options['connection_id'] = '';
+		$options['last_synced_at'] = 0;
 		delete_option( self::SECRET_OPTION_NAME );
 		delete_option( self::CONNECTION_OPTION_NAME );
 
@@ -477,16 +482,46 @@ final class CMPly_Cookie_Consent {
 		}
 		check_admin_referer( 'cmply_verify_connection' );
 		$options = self::options();
-		$api_key = get_option( self::SECRET_OPTION_NAME, '' );
-		if ( empty( $options['site_id'] ) || empty( $api_key ) ) {
+		if ( empty( $options['site_id'] ) || empty( get_option( self::SECRET_OPTION_NAME, '' ) ) ) {
 			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=not_connected' ) );
 			exit;
 		}
-		$url = self::service_endpoint( $options, '/api/integrations/wordpress/connect/verify' );
-		if ( empty( $url ) ) {
-			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=invalid_service_url' ) );
-			exit;
+		$status = self::refresh_account_snapshot( $options ) ? 'cmply_verified=1' : 'cmply_error=verify_failed';
+		wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&' . $status ) );
+		exit;
+	}
+
+	/**
+	 * Refresh stale account data when the CMPly settings page opens.
+	 *
+	 * @return void
+	 */
+	public static function maybe_refresh_account_snapshot() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
 		}
+
+		$options = self::options();
+		if ( ! self::has_account_connection( $options ) || time() - (int) $options['last_synced_at'] < 15 * MINUTE_IN_SECONDS ) {
+			return;
+		}
+
+		self::refresh_account_snapshot( $options );
+	}
+
+	/**
+	 * Fetch and persist the latest CMPly account snapshot.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return bool
+	 */
+	private static function refresh_account_snapshot( $options ) {
+		$api_key = get_option( self::SECRET_OPTION_NAME, '' );
+		$url     = self::service_endpoint( $options, '/api/integrations/wordpress/connect/verify' );
+		if ( empty( $options['site_id'] ) || empty( $api_key ) || empty( $url ) ) {
+			return false;
+		}
+
 		$request_body = array(
 			'siteId'  => $options['site_id'],
 			'apiKey'   => $api_key,
@@ -504,7 +539,6 @@ final class CMPly_Cookie_Consent {
 				'body'    => wp_json_encode( $request_body ),
 			)
 		);
-		$status = 'cmply_error=verify_failed';
 		if ( ! is_wp_error( $response ) && 200 === wp_remote_retrieve_response_code( $response ) ) {
 			$payload = json_decode( wp_remote_retrieve_body( $response ), true );
 			if ( is_array( $payload ) && ! empty( $payload['ok'] ) && ! empty( $payload['data']['account'] ) ) {
@@ -513,12 +547,13 @@ final class CMPly_Cookie_Consent {
 					self::save_connection_id( $options['connection_id'] );
 				}
 				self::apply_account_snapshot( $options, $payload['data']['account'] );
+				$options['last_synced_at'] = time();
 				update_option( self::OPTION_NAME, $options );
-				$status = 'cmply_verified=1';
+				return true;
 			}
 		}
-		wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&' . $status ) );
-		exit;
+
+		return false;
 	}
 
 	/**

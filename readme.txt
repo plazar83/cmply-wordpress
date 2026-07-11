@@ -4,7 +4,7 @@ Tags: cookies, consent, gdpr, cmp, cookie banner
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.15
+Stable tag: 1.0.16
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ Yes. Add one path per line in Exclude Paths, for example:
 The WordPress plugin stores only its admin settings in the WordPress database. The public consent cookie is created by the CMPly SDK in the visitor's browser.
 
 == Changelog ==
+
+= 1.0.16 =
+* Automatically refresh plan and pageview usage when CMPly settings open and the saved snapshot is older than 15 minutes.
+* Keep Verify connection as an immediate manual refresh and diagnostic action.
 
 = 1.0.15 =
 * Show fractional pageview usage below ten percent instead of rounding it to zero.
