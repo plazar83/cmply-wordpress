@@ -265,7 +265,7 @@
 
 .cmply-icon::after {
 	color: #0b74ff;
-	content: "✓";
+	content: "\2713";
 	font-size: 20px;
 	font-weight: 700;
 	left: 50%;
@@ -275,27 +275,27 @@
 }
 
 .cmply-icon-language::after {
-	content: "◎";
+	content: "\25CE";
 }
 
 .cmply-icon-target::after {
-	content: "⌾";
+	content: "\2316";
 }
 
 .cmply-icon-cookie::after {
-	content: "●";
+	content: "\25CF";
 }
 
 .cmply-icon-grid::after {
-	content: "▦";
+	content: "\25A6";
 }
 
 .cmply-icon-search::after {
-	content: "⌕";
+	content: "\2315";
 }
 
 .cmply-icon-document::after {
-	content: "□";
+	content: "\25A1";
 }
 
 .cmply-icon-code::after {
@@ -420,21 +420,45 @@
 	margin: 0 0 18px;
 }
 
-.cmply-faq a {
-	align-items: center;
+.cmply-faq details {
 	border-bottom: 1px solid #dddfe5;
-	color: #4b4d69;
-	display: flex;
-	font-weight: 700;
-	justify-content: space-between;
-	padding: 12px 0;
-	text-decoration: none;
 }
 
-.cmply-faq span {
+.cmply-faq summary {
+	align-items: center;
+	color: #4b4d69;
+	cursor: pointer;
+	display: grid;
+	font-weight: 700;
+	grid-template-columns: 1fr auto;
+	list-style: none;
+	padding: 12px 0;
+}
+
+.cmply-faq summary::-webkit-details-marker {
+	display: none;
+}
+
+.cmply-faq summary::after {
 	color: #7b8094;
-	font-size: 28px;
+	content: "+";
+	font-size: 22px;
 	line-height: 1;
+}
+
+.cmply-faq details[open] summary::after {
+	content: "\2212";
+}
+
+.cmply-faq details p {
+	color: #5f6475;
+	line-height: 1.5;
+	margin: 0;
+	padding: 0 20px 14px 0;
+}
+
+.cmply-crown::before {
+	content: "\2655";
 }
 
 .cmply-titlebar {

@@ -825,7 +825,7 @@ final class CMPly_Cookie_Consent {
 				<li><?php esc_html_e( 'Geo-targeted cookie banners', 'cmply' ); ?></li>
 				<li><?php esc_html_e( 'Scheduled scans for automatic updates', 'cmply' ); ?></li>
 			</ul>
-			<a class="cmply-button cmply-button-primary cmply-upgrade-button" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><span class="cmply-crown" aria-hidden="true">♕</span><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
+			<a class="cmply-button cmply-button-primary cmply-upgrade-button" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><span class="cmply-crown" aria-hidden="true"></span><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
 		</div>
 		<?php
 	}
@@ -837,17 +837,20 @@ final class CMPly_Cookie_Consent {
 	 */
 	private static function render_faq_card() {
 		$items = array(
-			__( 'How do I customise the cookie consent banner?', 'cmply' ),
-			__( 'How do I scan web pages for cookies?', 'cmply' ),
-			__( 'What are pageviews?', 'cmply' ),
-			__( 'What happens if the monthly pageview limit exceeds?', 'cmply' ),
-			__( 'How do I disconnect the plugin from the web app?', 'cmply' ),
+			array( 'question' => __( 'How do I customise the cookie consent banner?', 'cmply' ), 'answer' => __( 'Open the CMPly web app and select your site. Banner layout, colours, text, categories, and languages are managed there and published to WordPress automatically.', 'cmply' ) ),
+			array( 'question' => __( 'How do I scan web pages for cookies?', 'cmply' ), 'answer' => __( 'Open your site in the CMPly web app and start a scan from the scanner section. Scan availability and frequency depend on your current plan.', 'cmply' ) ),
+			array( 'question' => __( 'What are pageviews?', 'cmply' ), 'answer' => __( 'A pageview is counted when a visitor loads a page where the CMPly SDK is active. The counter resets for each billing period.', 'cmply' ) ),
+			array( 'question' => __( 'What happens if the monthly pageview limit is exceeded?', 'cmply' ), 'answer' => __( 'CMPly shows your current usage and limit in this dashboard. Upgrade the plan in the web app if your site needs a higher monthly allowance.', 'cmply' ) ),
+			array( 'question' => __( 'How do I disconnect the plugin from the web app?', 'cmply' ), 'answer' => __( 'Open Site Settings in this plugin and choose Disconnect. The saved connection credentials are removed from WordPress.', 'cmply' ) ),
 		);
 		?>
 		<div class="cmply-faq">
 			<h2><?php esc_html_e( 'Frequently Asked Questions', 'cmply' ); ?></h2>
 			<?php foreach ( $items as $item ) : ?>
-				<a href="https://cmply.app" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $item ); ?><span>›</span></a>
+				<details>
+					<summary><?php echo esc_html( $item['question'] ); ?></summary>
+					<p><?php echo esc_html( $item['answer'] ); ?></p>
+				</details>
 			<?php endforeach; ?>
 		</div>
 		<?php
