@@ -1044,9 +1044,14 @@ final class CMPly_Cookie_Consent {
 	 */
 	private static function create_connection_state() {
 		$state = wp_generate_password( 48, false, false );
-		$key   = 'cmply_connect_' . hash( 'sha256', $state );
-
-		set_transient( $key, get_current_user_id(), 30 * MINUTE_IN_SECONDS );
+		update_user_meta(
+			get_current_user_id(),
+			'cmply_connection_state',
+			array(
+				'hash'      => hash( 'sha256', $state ),
+				'expires_at' => time() + ( 30 * MINUTE_IN_SECONDS ),
+			)
+		);
 
 		return $state;
 	}
@@ -1062,11 +1067,17 @@ final class CMPly_Cookie_Consent {
 			return false;
 		}
 
-		$key     = 'cmply_connect_' . hash( 'sha256', $state );
-		$user_id = get_transient( $key );
-		delete_transient( $key );
+		$user_id = get_current_user_id();
+		$stored  = get_user_meta( $user_id, 'cmply_connection_state', true );
+		delete_user_meta( $user_id, 'cmply_connection_state' );
 
-		return false !== $user_id && (int) $user_id === get_current_user_id();
+		if ( ! is_array( $stored ) || empty( $stored['hash'] ) || empty( $stored['expires_at'] ) || time() > (int) $stored['expires_at'] ) {
+			return false;
+		}
+
+		$received_hash = hash( 'sha256', $state );
+
+		return hash_equals( (string) $stored['hash'], $received_hash );
 	}
 
 	/**
