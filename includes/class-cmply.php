@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class CMPly_Cookie_Consent {
 	const OPTION_NAME = 'cmply_options';
 	const SECRET_OPTION_NAME = 'cmply_api_key';
+	const CONNECTION_OPTION_NAME = 'cmply_connection_id';
 	const SERVICE_HOST = 'cmply.app';
 	private static $connection_state_error = 'callback_invalid';
 
@@ -82,7 +83,12 @@ final class CMPly_Cookie_Consent {
 			$options = array();
 		}
 
-		return wp_parse_args( $options, self::defaults() );
+		$options = wp_parse_args( $options, self::defaults() );
+		if ( empty( $options['connection_id'] ) ) {
+			$options['connection_id'] = sanitize_text_field( get_option( self::CONNECTION_OPTION_NAME, '' ) );
+		}
+
+		return $options;
 	}
 
 	/**
@@ -422,6 +428,7 @@ final class CMPly_Cookie_Consent {
 		$options['enabled']       = 1;
 		$options['site_id']       = $site_id;
 		$options['connection_id'] = $connection_id;
+		self::save_connection_id( $connection_id );
 		self::save_api_key( sanitize_text_field( $payload['data']['apiKey'] ) );
 		self::apply_account_snapshot( $options, $payload['data']['account'] ?? array() );
 
@@ -451,6 +458,7 @@ final class CMPly_Cookie_Consent {
 		$options['pageviews_limit'] = 0;
 		$options['connection_id'] = '';
 		delete_option( self::SECRET_OPTION_NAME );
+		delete_option( self::CONNECTION_OPTION_NAME );
 
 		update_option( self::OPTION_NAME, $options );
 
@@ -470,7 +478,7 @@ final class CMPly_Cookie_Consent {
 		check_admin_referer( 'cmply_verify_connection' );
 		$options = self::options();
 		$api_key = get_option( self::SECRET_OPTION_NAME, '' );
-		if ( empty( $options['site_id'] ) || empty( $options['connection_id'] ) || empty( $api_key ) ) {
+		if ( empty( $options['site_id'] ) || empty( $api_key ) ) {
 			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=not_connected' ) );
 			exit;
 		}
@@ -479,25 +487,31 @@ final class CMPly_Cookie_Consent {
 			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=invalid_service_url' ) );
 			exit;
 		}
+		$request_body = array(
+			'siteId'  => $options['site_id'],
+			'apiKey'   => $api_key,
+			'siteUrl'  => home_url(),
+		);
+		if ( ! empty( $options['connection_id'] ) ) {
+			$request_body['connectionId'] = $options['connection_id'];
+		}
+
 		$response = wp_safe_remote_post(
 			$url,
 			array(
 				'timeout' => 15,
 				'headers' => array( 'Content-Type' => 'application/json' ),
-				'body'    => wp_json_encode(
-					array(
-						'connectionId' => $options['connection_id'],
-						'siteId'       => $options['site_id'],
-						'apiKey'       => $api_key,
-						'siteUrl'      => home_url(),
-					)
-				),
+				'body'    => wp_json_encode( $request_body ),
 			)
 		);
 		$status = 'cmply_error=verify_failed';
 		if ( ! is_wp_error( $response ) && 200 === wp_remote_retrieve_response_code( $response ) ) {
 			$payload = json_decode( wp_remote_retrieve_body( $response ), true );
 			if ( is_array( $payload ) && ! empty( $payload['ok'] ) && ! empty( $payload['data']['account'] ) ) {
+				if ( ! empty( $payload['data']['connectionId'] ) ) {
+					$options['connection_id'] = sanitize_text_field( $payload['data']['connectionId'] );
+					self::save_connection_id( $options['connection_id'] );
+				}
 				self::apply_account_snapshot( $options, $payload['data']['account'] );
 				update_option( self::OPTION_NAME, $options );
 				$status = 'cmply_verified=1';
@@ -561,7 +575,7 @@ final class CMPly_Cookie_Consent {
 	 * @return bool
 	 */
 	private static function has_account_connection( $options ) {
-		return ! empty( $options['site_id'] ) && ! empty( $options['connection_id'] );
+		return ! empty( $options['site_id'] ) && ( ! empty( $options['connection_id'] ) || ! empty( get_option( self::SECRET_OPTION_NAME, '' ) ) );
 	}
 
 	/**
@@ -1162,6 +1176,17 @@ final class CMPly_Cookie_Consent {
 	private static function save_api_key( $api_key ) {
 		delete_option( self::SECRET_OPTION_NAME );
 		add_option( self::SECRET_OPTION_NAME, $api_key, '', false );
+	}
+
+	/**
+	 * Store the connection ID separately from editable settings.
+	 *
+	 * @param string $connection_id CMPly connection ID.
+	 * @return void
+	 */
+	private static function save_connection_id( $connection_id ) {
+		delete_option( self::CONNECTION_OPTION_NAME );
+		add_option( self::CONNECTION_OPTION_NAME, $connection_id, '', false );
 	}
 
 	/**
