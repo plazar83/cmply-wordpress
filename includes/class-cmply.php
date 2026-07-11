@@ -1023,11 +1023,7 @@ final class CMPly_Cookie_Consent {
 	private static function connect_url( $options ) {
 		$base_url   = self::sanitize_service_url( (string) $options['sdk_base_url'] );
 		$state      = self::create_connection_state();
-		$return_url = add_query_arg(
-			'cmply_state',
-			$state,
-			admin_url( 'admin-post.php?action=cmply_connect_callback' )
-		);
+		$return_url = admin_url( 'admin-post.php?action=cmply_connect_callback' );
 
 		$url = add_query_arg(
 			array(
@@ -1036,6 +1032,7 @@ final class CMPly_Cookie_Consent {
 				'admin_url'      => admin_url( 'options-general.php?page=cmply' ),
 				'plugin_version' => CMPLY_COOKIE_CONSENT_VERSION,
 				'source'         => 'wordpress',
+				'connection_state' => $state,
 			),
 			$base_url . '/integrations/wordpress/connect'
 		);
