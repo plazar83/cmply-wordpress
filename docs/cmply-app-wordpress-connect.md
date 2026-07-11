@@ -36,7 +36,9 @@ Expected behavior:
 2. If the user is not logged in, redirect to login/register and preserve the original connect URL.
 3. After login, show a WordPress connection page.
 4. Let the user choose an existing CMPly site or create a new site for `site_url`.
-5. Redirect back to the plugin `return_url` with the selected `site_id`.
+5. Create a ten-minute, single-use connection code.
+6. Redirect back with `site_id`, `connection_id`, `connection_code`, and the fixed CMPly `exchange_url`.
+7. WordPress exchanges the code server-to-server and stores the returned API key as a non-autoloaded option.
 
 ## Query Parameters From Plugin
 
@@ -90,10 +92,10 @@ wordpress
 
 ## Callback Back To WordPress
 
-After user chooses or creates a site, redirect to:
+After the user chooses or creates a site, redirect to:
 
 ```text
-{return_url}&site_id={siteId}
+{return_url}&site_id={siteId}&connection_id={connectionId}&connection_code={oneTimeCode}&exchange_url=https%3A%2F%2Fcmply.app%2Fapi%2Fintegrations%2Fwordpress%2Fconnect%2Fexchange
 ```
 
 Optional parameters:
@@ -109,9 +111,11 @@ Example:
 https://example.com/wp-admin/admin-post.php?action=cmply_connect_callback&_wpnonce=abc123&site_id=site_123&email=user@example.com&plan=Free
 ```
 
-The plugin will save:
+The plugin exchanges the one-time code and then saves:
 
 - `site_id`
+- `connection_id`
+- `api_key` in a separate non-autoloaded option
 - `account_email` if present
 - `plan` if present
 
@@ -176,7 +180,7 @@ CMPly does not need to verify the nonce. WordPress verifies it when the callback
 
 CMPly must still prevent open redirects by validating `return_url`.
 
-No secret API key should be exposed in the browser or stored in WordPress for the initial plugin version.
+The permanent API key must never be placed in a URL, browser storage, HTML, JavaScript, or logs. Only the short-lived one-time code may travel through the callback URL.
 
 ## Optional Future Improvement
 

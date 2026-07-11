@@ -18,10 +18,10 @@ The plugin prints the CMPly SDK in the public `<head>` at a very early priority 
 
 Features:
 
-* Connect button for CMPly web app authorization and automatic Site ID return.
+* Connect button with a short-lived, one-time server-to-server authorization exchange.
 * Site ID configuration in Settings > CMPly.
 * Auto-inject or manual embed mode for the CMPly SDK.
-* Production or staging SDK base URL.
+* HTTPS SDK loading from the official CMPly.app service.
 * Optional SDK version query for cache busting.
 * Optional language override with automatic browser-language detection by default.
 * URL path exclusions with wildcard support.
@@ -31,6 +31,8 @@ This plugin requires an active CMPly.app site configuration. CMPly provides the 
 == External services ==
 
 This plugin connects to CMPly.app, a third-party consent-management service, when CMPly is enabled and a Site ID is configured.
+
+When an administrator chooses Connect or Verify, WordPress sends the site URL, connection identifiers, plugin version, and a short-lived connection code to CMPly. CMPly returns the Site ID and API key server-to-server. The API key is stored as a non-autoloaded WordPress option, is never printed in public HTML, and is deleted on disconnect or uninstall.
 
 The plugin loads the CMPly JavaScript SDK from:
 
@@ -72,7 +74,7 @@ Turn off Auto-inject SDK in Settings > CMPly and keep the manual script near the
 
 = How does the Connect button work? =
 
-The button opens the CMPly web app at `/integrations/wordpress/connect` with your WordPress site URL and a secure return URL. After you choose or create a site in CMPly, CMPly redirects back to WordPress with the Site ID, and the plugin saves it.
+The button opens the CMPly web app with your WordPress site URL and a nonce-protected return URL. CMPly returns a ten-minute, single-use code. WordPress exchanges that code with CMPly over HTTPS and stores the resulting credentials server-side.
 
 = Can I disable CMPly on specific pages? =
 
@@ -88,3 +90,4 @@ The WordPress plugin stores only its admin settings in the WordPress database. T
 
 = 1.0.0 =
 * Initial release.
+* Added one-time connection exchange and server-side connection verification.

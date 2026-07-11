@@ -9,11 +9,11 @@ The plugin is built for the WordPress.org plugin directory with the public plugi
 - Cookie consent SDK injection in the public `<head>`.
 - Early script loading without `defer` or `async` so CMPly can block third-party scripts before they run.
 - WordPress admin dashboard inspired by CookieYes-style plugin screens.
-- `Connect to CMPly` flow for web-app authorization and automatic Site ID return.
+- `Connect to CMPly` flow with a short-lived one-time code and server-side credential exchange.
 - Manual Site ID fallback.
 - Google Consent Mode overview screen.
 - Auto-inject or manual embed mode for the CMPly SDK.
-- Optional SDK base URL, SDK version query, language override, and excluded paths.
+- Official HTTPS SDK URL, optional SDK version query, language override, and excluded paths.
 - WordPress.org-ready `readme.txt` with external service disclosure.
 
 ## Installation
@@ -36,7 +36,7 @@ The SDK then loads CMPly settings and consent data from `cmply.app` in the visit
 
 If the SDK is already inserted manually in the theme or a header manager, turn off **Auto-inject SDK** in Settings > CMPly and keep only one CMPly SDK script on the page.
 
-## Connect Button Backend Requirement
+## Connect Button Backend
 
 The WordPress plugin already points the connect button to:
 
@@ -44,13 +44,13 @@ The WordPress plugin already points the connect button to:
 https://cmply.app/integrations/wordpress/connect
 ```
 
-The CMPly web app still needs to implement that route. See:
+The CMPly web app creates a ten-minute single-use code. WordPress exchanges it server-to-server; the permanent API key is never placed in a callback URL. See:
 
 [docs/cmply-app-wordpress-connect.md](docs/cmply-app-wordpress-connect.md)
 
 ## Future Plugin API Requirements
 
-The endpoints needed for editable WordPress-side settings, GCM controls, analytics summaries, usage, and secure connection tokens are documented here:
+The current connection endpoints and future endpoints for editable WordPress-side settings, GCM controls, analytics summaries, and usage are documented here:
 
 [docs/plugin-endpoints.md](docs/plugin-endpoints.md)
 

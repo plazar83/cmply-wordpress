@@ -14,6 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class CMPly_Cookie_Consent {
 	const OPTION_NAME = 'cmply_options';
+	const SECRET_OPTION_NAME = 'cmply_api_key';
+	const SERVICE_HOST = 'cmply.app';
 
 	/**
 	 * Default option values.
@@ -31,6 +33,7 @@ final class CMPly_Cookie_Consent {
 			'exclude_paths' => '',
 			'account_email' => '',
 			'plan'          => 'Free',
+			'connection_id' => '',
 		);
 	}
 
@@ -47,6 +50,7 @@ final class CMPly_Cookie_Consent {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
 		add_action( 'admin_post_cmply_connect_callback', array( __CLASS__, 'handle_connect_callback' ) );
 		add_action( 'admin_post_cmply_disconnect', array( __CLASS__, 'handle_disconnect' ) );
+		add_action( 'admin_post_cmply_verify_connection', array( __CLASS__, 'handle_verify_connection' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'configuration_notice' ) );
 		add_filter( 'plugin_action_links_' . CMPLY_COOKIE_CONSENT_BASENAME, array( __CLASS__, 'settings_link' ) );
 
@@ -179,12 +183,13 @@ final class CMPly_Cookie_Consent {
 		$output['enabled']       = empty( $input['enabled'] ) ? 0 : 1;
 		$output['auto_inject']   = empty( $input['auto_inject'] ) ? 0 : 1;
 		$output['site_id']       = isset( $input['site_id'] ) ? sanitize_text_field( wp_unslash( $input['site_id'] ) ) : '';
-		$output['sdk_base_url']  = isset( $input['sdk_base_url'] ) ? esc_url_raw( untrailingslashit( wp_unslash( $input['sdk_base_url'] ) ) ) : $defaults['sdk_base_url'];
+		$output['sdk_base_url']  = isset( $input['sdk_base_url'] ) ? self::sanitize_service_url( wp_unslash( $input['sdk_base_url'] ) ) : $defaults['sdk_base_url'];
 		$output['sdk_version']   = isset( $input['sdk_version'] ) ? preg_replace( '/[^a-zA-Z0-9._-]/', '', sanitize_text_field( wp_unslash( $input['sdk_version'] ) ) ) : '';
 		$output['language']      = isset( $input['language'] ) ? preg_replace( '/[^a-zA-Z_-]/', '', sanitize_text_field( wp_unslash( $input['language'] ) ) ) : '';
 		$output['exclude_paths'] = isset( $input['exclude_paths'] ) ? sanitize_textarea_field( wp_unslash( $input['exclude_paths'] ) ) : '';
 		$output['account_email'] = isset( $input['account_email'] ) ? sanitize_email( wp_unslash( $input['account_email'] ) ) : $current['account_email'];
 		$output['plan']          = isset( $input['plan'] ) ? sanitize_text_field( wp_unslash( $input['plan'] ) ) : $current['plan'];
+		$output['connection_id'] = $current['connection_id'];
 
 		if ( empty( $output['sdk_base_url'] ) ) {
 			$output['sdk_base_url'] = $defaults['sdk_base_url'];
@@ -246,7 +251,7 @@ final class CMPly_Cookie_Consent {
 		$options = self::options();
 		?>
 		<input class="regular-text code" type="url" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[sdk_base_url]" value="<?php echo esc_attr( $options['sdk_base_url'] ); ?>" />
-		<p class="description"><?php esc_html_e( 'Use https://cmply.app for production, or a staging CMPly domain when testing.', 'cmply' ); ?></p>
+		<p class="description"><?php esc_html_e( 'For security, connection credentials are sent only to https://cmply.app.', 'cmply' ); ?></p>
 		<?php
 	}
 
@@ -347,15 +352,48 @@ final class CMPly_Cookie_Consent {
 
 		check_admin_referer( 'cmply_connect' );
 
-		$site_id = isset( $_GET['site_id'] ) ? sanitize_text_field( wp_unslash( $_GET['site_id'] ) ) : '';
-		if ( empty( $site_id ) ) {
+		$site_id         = isset( $_GET['site_id'] ) ? sanitize_text_field( wp_unslash( $_GET['site_id'] ) ) : '';
+		$connection_id   = isset( $_GET['connection_id'] ) ? sanitize_text_field( wp_unslash( $_GET['connection_id'] ) ) : '';
+		$connection_code = isset( $_GET['connection_code'] ) ? sanitize_text_field( wp_unslash( $_GET['connection_code'] ) ) : '';
+		$exchange_url    = isset( $_GET['exchange_url'] ) ? esc_url_raw( wp_unslash( $_GET['exchange_url'] ) ) : '';
+		$options         = self::options();
+		$expected_url    = self::service_endpoint( $options, '/api/integrations/wordpress/connect/exchange' );
+
+		if ( empty( $site_id ) || empty( $connection_id ) || empty( $connection_code ) || empty( $expected_url ) || $exchange_url !== $expected_url ) {
 			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=missing_site_id' ) );
 			exit;
 		}
 
-		$options                  = self::options();
+		$response = wp_safe_remote_post(
+			$exchange_url,
+			array(
+				'timeout' => 15,
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'connectionId'   => $connection_id,
+						'connectionCode' => $connection_code,
+						'siteUrl'        => home_url(),
+					)
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=exchange_failed' ) );
+			exit;
+		}
+
+		$payload = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( ! is_array( $payload ) || empty( $payload['ok'] ) || empty( $payload['data']['apiKey'] ) || $site_id !== $payload['data']['siteId'] ) {
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=invalid_exchange' ) );
+			exit;
+		}
+
 		$options['enabled']       = 1;
 		$options['site_id']       = $site_id;
+		$options['connection_id'] = $connection_id;
+		self::save_api_key( sanitize_text_field( $payload['data']['apiKey'] ) );
 		$options['account_email'] = isset( $_GET['email'] ) ? sanitize_email( wp_unslash( $_GET['email'] ) ) : $options['account_email'];
 		$options['plan']          = isset( $_GET['plan'] ) ? sanitize_text_field( wp_unslash( $_GET['plan'] ) ) : $options['plan'];
 
@@ -381,10 +419,53 @@ final class CMPly_Cookie_Consent {
 		$options['site_id']       = '';
 		$options['account_email'] = '';
 		$options['plan']          = 'Free';
+		$options['connection_id'] = '';
+		delete_option( self::SECRET_OPTION_NAME );
 
 		update_option( self::OPTION_NAME, $options );
 
 		wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_disconnected=1' ) );
+		exit;
+	}
+
+	/**
+	 * Verify the saved server-to-server connection.
+	 *
+	 * @return void
+	 */
+	public static function handle_verify_connection() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to verify CMPly.', 'cmply' ) );
+		}
+		check_admin_referer( 'cmply_verify_connection' );
+		$options = self::options();
+		$api_key = get_option( self::SECRET_OPTION_NAME, '' );
+		if ( empty( $options['site_id'] ) || empty( $options['connection_id'] ) || empty( $api_key ) ) {
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=not_connected' ) );
+			exit;
+		}
+		$url = self::service_endpoint( $options, '/api/integrations/wordpress/connect/verify' );
+		if ( empty( $url ) ) {
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=invalid_service_url' ) );
+			exit;
+		}
+		$response = wp_safe_remote_post(
+			$url,
+			array(
+				'timeout' => 15,
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'connectionId' => $options['connection_id'],
+						'siteId'       => $options['site_id'],
+						'apiKey'       => $api_key,
+						'siteUrl'      => home_url(),
+					)
+				),
+			)
+		);
+		$status = ! is_wp_error( $response ) && 200 === wp_remote_retrieve_response_code( $response ) ? 'cmply_verified=1' : 'cmply_error=verify_failed';
+		wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&' . $status ) );
 		exit;
 	}
 
@@ -606,6 +687,7 @@ final class CMPly_Cookie_Consent {
 				<div class="cmply-actions">
 					<a class="cmply-button cmply-button-primary" href="<?php echo esc_url( self::connect_url( $options ) ); ?>"><?php echo esc_html( $is_connected ? __( 'Reconnect', 'cmply' ) : __( 'Connect to CMPly', 'cmply' ) ); ?></a>
 					<?php if ( $is_connected ) : ?>
+						<a class="cmply-button cmply-button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cmply_verify_connection' ), 'cmply_verify_connection' ) ); ?>"><?php esc_html_e( 'Verify connection', 'cmply' ); ?></a>
 						<a class="cmply-button cmply-button-danger" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cmply_disconnect' ), 'cmply_disconnect' ) ); ?>"><?php esc_html_e( 'Disconnect', 'cmply' ); ?></a>
 					<?php endif; ?>
 				</div>
@@ -849,7 +931,7 @@ final class CMPly_Cookie_Consent {
 	 * @return string
 	 */
 	private static function connect_url( $options ) {
-		$base_url   = untrailingslashit( (string) $options['sdk_base_url'] );
+		$base_url   = self::sanitize_service_url( (string) $options['sdk_base_url'] );
 		$return_url = wp_nonce_url(
 			admin_url( 'admin-post.php?action=cmply_connect_callback' ),
 			'cmply_connect'
@@ -867,6 +949,49 @@ final class CMPly_Cookie_Consent {
 		);
 
 		return esc_url( $url );
+	}
+
+	/**
+	 * Restrict service URLs to CMPly over HTTPS.
+	 *
+	 * @param string $url Candidate URL.
+	 * @return string
+	 */
+	private static function sanitize_service_url( $url ) {
+		$url   = esc_url_raw( untrailingslashit( (string) $url ), array( 'https' ) );
+		$host  = wp_parse_url( $url, PHP_URL_HOST );
+		$port  = wp_parse_url( $url, PHP_URL_PORT );
+		$query = wp_parse_url( $url, PHP_URL_QUERY );
+
+		if ( self::SERVICE_HOST !== strtolower( (string) $host ) || ! empty( $port ) || ! empty( $query ) ) {
+			return 'https://' . self::SERVICE_HOST;
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Build a trusted CMPly API endpoint.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @param string               $path Endpoint path.
+	 * @return string
+	 */
+	private static function service_endpoint( $options, $path ) {
+		$base_url = self::sanitize_service_url( (string) $options['sdk_base_url'] );
+
+		return untrailingslashit( $base_url ) . '/' . ltrim( $path, '/' );
+	}
+
+	/**
+	 * Store the API key without autoloading it on every request.
+	 *
+	 * @param string $api_key CMPly API key.
+	 * @return void
+	 */
+	private static function save_api_key( $api_key ) {
+		delete_option( self::SECRET_OPTION_NAME );
+		add_option( self::SECRET_OPTION_NAME, $api_key, '', false );
 	}
 
 	/**
