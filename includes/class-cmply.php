@@ -561,7 +561,7 @@ final class CMPly_Cookie_Consent {
 	 * @return bool
 	 */
 	private static function has_account_connection( $options ) {
-		return ! empty( $options['site_id'] ) && ! empty( $options['connection_id'] ) && ! empty( get_option( self::SECRET_OPTION_NAME, '' ) );
+		return ! empty( $options['site_id'] ) && ! empty( $options['connection_id'] );
 	}
 
 	/**
@@ -620,6 +620,7 @@ final class CMPly_Cookie_Consent {
 			<div class="cmply-primary">
 				<?php self::render_review_notice(); ?>
 
+				<?php if ( ! $is_connected ) : ?>
 				<div class="cmply-panel cmply-connection">
 					<h2>
 						<span class="<?php echo esc_attr( $is_connected ? 'cmply-status-dot is-ok' : 'cmply-status-dot is-warn' ); ?>"></span>
@@ -651,6 +652,7 @@ final class CMPly_Cookie_Consent {
 						<a class="cmply-button cmply-button-secondary" href="<?php echo esc_url( admin_url( 'options-general.php?page=cmply&tab=site-settings' ) ); ?>"><?php echo esc_html( $is_connected ? __( 'Edit connection', 'cmply' ) : __( 'Add Site ID', 'cmply' ) ); ?></a>
 					</div>
 				</div>
+				<?php endif; ?>
 
 				<div class="cmply-panel">
 					<div class="cmply-panel-heading">
