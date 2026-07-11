@@ -16,6 +16,7 @@ final class CMPly_Cookie_Consent {
 	const OPTION_NAME = 'cmply_options';
 	const SECRET_OPTION_NAME = 'cmply_api_key';
 	const SERVICE_HOST = 'cmply.app';
+	private static $connection_state_error = 'callback_invalid';
 
 	/**
 	 * Default option values.
@@ -357,7 +358,7 @@ final class CMPly_Cookie_Consent {
 
 		$state = isset( $_GET['cmply_state'] ) ? sanitize_text_field( wp_unslash( $_GET['cmply_state'] ) ) : '';
 		if ( ! self::consume_connection_state( $state ) ) {
-			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=callback_expired' ) );
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=' . self::$connection_state_error ) );
 			exit;
 		}
 
@@ -504,7 +505,12 @@ final class CMPly_Cookie_Consent {
 		$error = isset( $_GET['cmply_error'] ) ? sanitize_key( wp_unslash( $_GET['cmply_error'] ) ) : '';
 		$messages = array(
 			'missing_site_id'     => __( 'The callback data was incomplete. Start the connection again.', 'cmply' ),
-			'callback_expired'    => __( 'The WordPress connection link is invalid or expired. Start the connection again from this page.', 'cmply' ),
+			'callback_missing'    => __( 'CMPly returned without the WordPress security state. Start again and do not reuse an older CMPly tab.', 'cmply' ),
+			'callback_malformed'  => __( 'The WordPress security state was changed during the redirect.', 'cmply' ),
+			'callback_wrong_user' => __( 'The connection was started by a different WordPress administrator session.', 'cmply' ),
+			'callback_expired'    => __( 'The WordPress connection state expired. Start the connection again.', 'cmply' ),
+			'callback_signature'  => __( 'The WordPress connection state signature is invalid. The site security keys may have changed during the connection.', 'cmply' ),
+			'callback_invalid'    => __( 'The WordPress connection state is invalid. Start the connection again.', 'cmply' ),
 			'service_unavailable' => __( 'WordPress could not reach CMPly. Check outbound HTTPS access and try again.', 'cmply' ),
 			'exchange_expired'    => __( 'The connection code expired or was already used. Start the connection again.', 'cmply' ),
 			'exchange_failed'     => __( 'CMPly rejected the request. Confirm that the selected CMPly site matches this WordPress domain.', 'cmply' ),
@@ -1056,24 +1062,44 @@ final class CMPly_Cookie_Consent {
 	 * @return bool
 	 */
 	private static function consume_connection_state( $state ) {
-		if ( empty( $state ) || strlen( $state ) > 200 ) {
+		if ( empty( $state ) ) {
+			self::$connection_state_error = 'callback_missing';
+			return false;
+		}
+		if ( strlen( $state ) > 200 ) {
+			self::$connection_state_error = 'callback_malformed';
 			return false;
 		}
 
 		$parts = explode( '.', $state );
 		if ( 4 !== count( $parts ) ) {
+			self::$connection_state_error = 'callback_malformed';
 			return false;
 		}
 
 		list( $user_id, $expires_at, $random, $signature ) = $parts;
-		if ( ! ctype_digit( $user_id ) || ! ctype_digit( $expires_at ) || empty( $random ) || time() > (int) $expires_at || (int) $user_id !== get_current_user_id() ) {
+		if ( ! ctype_digit( $user_id ) || ! ctype_digit( $expires_at ) || empty( $random ) ) {
+			self::$connection_state_error = 'callback_malformed';
+			return false;
+		}
+		if ( time() > (int) $expires_at ) {
+			self::$connection_state_error = 'callback_expired';
+			return false;
+		}
+		if ( (int) $user_id !== get_current_user_id() ) {
+			self::$connection_state_error = 'callback_wrong_user';
 			return false;
 		}
 
 		$payload  = $user_id . '.' . $expires_at . '.' . $random;
 		$expected = hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
 
-		return hash_equals( $expected, $signature );
+		if ( ! hash_equals( $expected, $signature ) ) {
+			self::$connection_state_error = 'callback_signature';
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
