@@ -594,10 +594,11 @@ final class CMPly_Cookie_Consent {
 		$plan            = ucfirst( sanitize_key( (string) $options['plan'] ) );
 		$pageviews_used  = max( 0, (int) $options['pageviews_used'] );
 		$pageviews_limit = (int) $options['pageviews_limit'];
-		$percentage      = $pageviews_limit > 0 ? min( 100, (int) round( ( $pageviews_used / $pageviews_limit ) * 100 ) ) : 0;
+		$percentage      = $pageviews_limit > 0 ? min( 100, ( $pageviews_used / $pageviews_limit ) * 100 ) : 0;
+		$percentage_text = number_format_i18n( $percentage, $percentage > 0 && $percentage < 10 ? 1 : 0 );
 		$usage_label     = $pageviews_limit < 0
 			? sprintf( /* translators: %s: pageviews used */ __( '%s / Unlimited', 'cmply' ), number_format_i18n( $pageviews_used ) )
-			: sprintf( /* translators: 1: pageviews used, 2: pageview limit, 3: percentage */ __( '%1$s / %2$s (%3$d%%)', 'cmply' ), number_format_i18n( $pageviews_used ), number_format_i18n( max( 0, $pageviews_limit ) ), $percentage );
+			: sprintf( /* translators: 1: pageviews used, 2: pageview limit, 3: percentage */ __( '%1$s / %2$s (%3$s%%)', 'cmply' ), number_format_i18n( $pageviews_used ), number_format_i18n( max( 0, $pageviews_limit ) ), $percentage_text );
 		?>
 		<div class="cmply-topbar">
 			<nav class="cmply-tabs" aria-label="<?php esc_attr_e( 'CMPly sections', 'cmply' ); ?>">
