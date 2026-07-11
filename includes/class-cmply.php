@@ -833,6 +833,8 @@ final class CMPly_Cookie_Consent {
 		$script_url   = self::sdk_url( $options );
 		$is_configured = ! empty( $options['site_id'] );
 		$is_connected  = self::has_account_connection( $options );
+		$connection_error = isset( $_GET['cmply_error'] ) ? sanitize_key( wp_unslash( $_GET['cmply_error'] ) ) : '';
+		$show_connect      = ! $is_connected || 'verify_failed' === $connection_error;
 		?>
 		<div class="cmply-panel">
 			<div class="cmply-titlebar">
@@ -846,7 +848,9 @@ final class CMPly_Cookie_Consent {
 				</h2>
 				<p><?php esc_html_e( 'Use the connection button to sign in to CMPly, choose a site, and return with the Site ID filled automatically. Manual Site ID entry remains available below.', 'cmply' ); ?></p>
 				<div class="cmply-actions">
-					<a class="cmply-button cmply-button-primary" href="<?php echo esc_url( self::connect_url( $options ) ); ?>"><?php echo esc_html( $is_connected ? __( 'Reconnect', 'cmply' ) : __( 'Connect to CMPly', 'cmply' ) ); ?></a>
+					<?php if ( $show_connect ) : ?>
+						<a class="cmply-button cmply-button-primary" href="<?php echo esc_url( self::connect_url( $options ) ); ?>"><?php echo esc_html( $is_connected ? __( 'Reconnect', 'cmply' ) : __( 'Connect to CMPly', 'cmply' ) ); ?></a>
+					<?php endif; ?>
 					<?php if ( $is_configured ) : ?>
 						<a class="cmply-button cmply-button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cmply_verify_connection' ), 'cmply_verify_connection' ) ); ?>"><?php esc_html_e( 'Verify connection', 'cmply' ); ?></a>
 						<a class="cmply-button cmply-button-danger" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cmply_disconnect' ), 'cmply_disconnect' ) ); ?>"><?php esc_html_e( 'Disconnect', 'cmply' ); ?></a>
