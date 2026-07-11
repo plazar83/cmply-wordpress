@@ -396,8 +396,20 @@ final class CMPly_Cookie_Consent {
 
 		$response_code = wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $response_code ) {
-			$error = in_array( $response_code, array( 409, 410 ), true ) ? 'exchange_expired' : 'exchange_failed';
-			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=' . $error ) );
+			$error_payload = json_decode( wp_remote_retrieve_body( $response ), true );
+			$error_detail  = is_array( $error_payload ) && ! empty( $error_payload['error'] ) ? sanitize_text_field( $error_payload['error'] ) : '';
+			$error         = in_array( $response_code, array( 409, 410 ), true ) ? 'exchange_expired' : 'exchange_failed';
+			$redirect_url  = add_query_arg(
+				array(
+					'page'               => 'cmply',
+					'tab'                => 'site-settings',
+					'cmply_error'        => $error,
+					'cmply_error_status' => $response_code,
+					'cmply_error_detail' => $error_detail,
+				),
+				admin_url( 'options-general.php' )
+			);
+			wp_safe_redirect( $redirect_url );
 			exit;
 		}
 
@@ -521,7 +533,13 @@ final class CMPly_Cookie_Consent {
 		);
 
 		if ( $error && isset( $messages[ $error ] ) ) {
-			printf( '<div class="notice notice-error inline cmply-notice"><p><strong>%s</strong> %s</p></div>', esc_html__( 'Connection failed.', 'cmply' ), esc_html( $messages[ $error ] ) );
+			$detail = isset( $_GET['cmply_error_detail'] ) ? sanitize_text_field( wp_unslash( $_GET['cmply_error_detail'] ) ) : '';
+			$status = isset( $_GET['cmply_error_status'] ) ? absint( $_GET['cmply_error_status'] ) : 0;
+			printf( '<div class="notice notice-error inline cmply-notice"><p><strong>%s</strong> %s</p>', esc_html__( 'Connection failed.', 'cmply' ), esc_html( $messages[ $error ] ) );
+			if ( $detail ) {
+				printf( '<p><code>%s%s</code></p>', esc_html( $detail ), $status ? esc_html( ' (HTTP ' . $status . ')' ) : '' );
+			}
+			echo '</div>';
 			return;
 		}
 
