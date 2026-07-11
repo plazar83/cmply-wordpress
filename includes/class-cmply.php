@@ -355,7 +355,11 @@ final class CMPly_Cookie_Consent {
 			wp_die( esc_html__( 'You do not have permission to connect CMPly.', 'cmply' ) );
 		}
 
-		check_admin_referer( 'cmply_connect' );
+		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'cmply_connect' ) ) {
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=callback_expired' ) );
+			exit;
+		}
 
 		$site_id         = isset( $_GET['site_id'] ) ? sanitize_text_field( wp_unslash( $_GET['site_id'] ) ) : '';
 		$connection_id   = isset( $_GET['connection_id'] ) ? sanitize_text_field( wp_unslash( $_GET['connection_id'] ) ) : '';
@@ -500,6 +504,7 @@ final class CMPly_Cookie_Consent {
 		$error = isset( $_GET['cmply_error'] ) ? sanitize_key( wp_unslash( $_GET['cmply_error'] ) ) : '';
 		$messages = array(
 			'missing_site_id'     => __( 'The callback data was incomplete. Start the connection again.', 'cmply' ),
+			'callback_expired'    => __( 'The WordPress connection link is invalid or expired. Start the connection again from this page.', 'cmply' ),
 			'service_unavailable' => __( 'WordPress could not reach CMPly. Check outbound HTTPS access and try again.', 'cmply' ),
 			'exchange_expired'    => __( 'The connection code expired or was already used. Start the connection again.', 'cmply' ),
 			'exchange_failed'     => __( 'CMPly rejected the request. Confirm that the selected CMPly site matches this WordPress domain.', 'cmply' ),
@@ -1011,9 +1016,10 @@ final class CMPly_Cookie_Consent {
 	 */
 	private static function connect_url( $options ) {
 		$base_url   = self::sanitize_service_url( (string) $options['sdk_base_url'] );
-		$return_url = wp_nonce_url(
-			admin_url( 'admin-post.php?action=cmply_connect_callback' ),
-			'cmply_connect'
+		$return_url = add_query_arg(
+			'_wpnonce',
+			wp_create_nonce( 'cmply_connect' ),
+			admin_url( 'admin-post.php?action=cmply_connect_callback' )
 		);
 
 		$url = add_query_arg(
