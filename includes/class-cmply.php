@@ -516,7 +516,7 @@ final class CMPly_Cookie_Consent {
 					<span><?php esc_html_e( 'Current plan:', 'cmply' ); ?> <strong><?php echo esc_html( $plan ); ?></strong></span>
 					<small><?php esc_html_e( 'Pageviews used:', 'cmply' ); ?> <strong><?php echo esc_html( $usage_label ); ?></strong></small>
 				</div>
-				<a class="cmply-button cmply-button-pro" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><span class="cmply-crown" aria-hidden="true">♕</span><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
+				<a class="cmply-button cmply-button-pro" href="https://cmply.app/pricing" target="_blank" rel="noopener noreferrer"><span class="cmply-crown" aria-hidden="true"></span><?php esc_html_e( 'Try Pro for free', 'cmply' ); ?></a>
 			</div>
 		</div>
 		<?php

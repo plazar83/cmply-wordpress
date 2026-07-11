@@ -295,7 +295,42 @@
 }
 
 .cmply-icon-document::after {
-	content: "\25A1";
+	border: 2px solid currentColor;
+	border-radius: 2px;
+	box-sizing: border-box;
+	content: "";
+	height: 18px;
+	width: 14px;
+}
+
+.cmply-icon-document::before {
+	background: #0b74ff;
+	content: "";
+	height: 2px;
+	left: 17px;
+	position: absolute;
+	top: 16px;
+	width: 7px;
+}
+
+.cmply-icon-target::after {
+	border: 2px solid currentColor;
+	border-radius: 50%;
+	box-sizing: border-box;
+	content: "";
+	height: 16px;
+	width: 16px;
+}
+
+.cmply-icon-target::before {
+	background: #0b74ff;
+	border-radius: 50%;
+	content: "";
+	height: 4px;
+	left: 18px;
+	position: absolute;
+	top: 18px;
+	width: 4px;
 }
 
 .cmply-icon-code::after {
