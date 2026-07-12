@@ -962,7 +962,7 @@ final class CMPly_Cookie_Consent {
 		?>
 		<div class="cmply-panel cmply-upgrade">
 			<h2><?php esc_html_e( 'Upgrade as your website grows', 'cmply' ); ?></h2>
-			<p><?php esc_html_e( 'Access advanced consent features and future-proof your business against legal risks.', 'cmply' ); ?></p>
+			<p><?php esc_html_e( 'Access advanced consent-management features as your website grows.', 'cmply' ); ?></p>
 			<ul>
 				<li><?php esc_html_e( 'Advanced banner customisation', 'cmply' ); ?></li>
 				<li><?php esc_html_e( 'Increased monthly pageviews', 'cmply' ); ?></li>
@@ -1119,7 +1119,7 @@ final class CMPly_Cookie_Consent {
 	}
 
 	/**
-	 * Create a one-time state token for the external connection round trip.
+	 * Create a short-lived signed state token for the external connection round trip.
 	 *
 	 * @return string
 	 */
@@ -1131,7 +1131,7 @@ final class CMPly_Cookie_Consent {
 	}
 
 	/**
-	 * Validate and consume a one-time connection state token.
+	 * Validate a short-lived connection state token.
 	 *
 	 * @param string $state State token returned by CMPly.
 	 * @return bool

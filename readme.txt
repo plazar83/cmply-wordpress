@@ -4,7 +4,7 @@ Tags: cookies, consent, gdpr, cmp, cookie banner
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.17
+Stable tag: 1.0.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ The plugin prints the CMPly SDK in the public `<head>` at a very early priority 
 
 Features:
 
-* Connect button with a short-lived, one-time server-to-server authorization exchange.
+* Connect button with a short-lived signed callback state and a single-use server-to-server authorization code.
 * Live account plan and monthly pageview usage synchronized on connect and verification.
 * Site ID configuration in Settings > CMPly.
 * Auto-inject or manual embed mode for the CMPly SDK.
@@ -75,7 +75,7 @@ Turn off Auto-inject SDK in Settings > CMPly and keep the manual script near the
 
 = How does the Connect button work? =
 
-The button opens the CMPly web app with your WordPress site URL and a nonce-protected return URL. CMPly returns a ten-minute, single-use code. WordPress exchanges that code with CMPly over HTTPS and stores the resulting credentials server-side.
+The button opens the CMPly web app with your WordPress site URL, return URL, and a signed WordPress callback-state token that expires after 30 minutes. CMPly separately returns a ten-minute, single-use authorization code. WordPress exchanges that code with CMPly over HTTPS and stores the resulting credentials server-side.
 
 = Can I disable CMPly on specific pages? =
 
@@ -88,6 +88,10 @@ Yes. Add one path per line in Exclude Paths, for example:
 The WordPress plugin stores only its admin settings in the WordPress database. The public consent cookie is created by the CMPly SDK in the visitor's browser.
 
 == Changelog ==
+
+= 1.0.18 =
+* Clarified the connection flow by distinguishing the signed WordPress callback state from the single-use CMPly authorization code.
+* Reworded upgrade messaging to avoid implying guaranteed protection from legal risk.
 
 = 1.0.17 =
 * Hide Reconnect while the connection is healthy and show it only after a verification failure.

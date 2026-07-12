@@ -20,6 +20,7 @@ site_url
 admin_url
 plugin_version
 source=wordpress
+connection_state
 ```
 
 ## Required cmply.app Route
@@ -91,12 +92,16 @@ Should be:
 wordpress
 ```
 
+`connection_state`
+
+A signed, administrator-bound WordPress callback-state token that expires after 30 minutes. CMPly must return this value unchanged as `cmply_state`; it does not need to validate the signature.
+
 ## Callback Back To WordPress
 
 After the user chooses or creates a site, redirect to:
 
 ```text
-{return_url}&site_id={siteId}&connection_id={connectionId}&connection_code={oneTimeCode}&exchange_url=https%3A%2F%2Fcmply.app%2Fapi%2Fintegrations%2Fwordpress%2Fconnect%2Fexchange
+{return_url}&cmply_state={connectionState}&site_id={siteId}&connection_id={connectionId}&connection_code={oneTimeCode}&exchange_url=https%3A%2F%2Fcmply.app%2Fapi%2Fintegrations%2Fwordpress%2Fconnect%2Fexchange
 ```
 
 Optional parameters:
@@ -109,7 +114,7 @@ plan={planName}
 Example:
 
 ```text
-https://example.com/wp-admin/admin-post.php?action=cmply_connect_callback&_wpnonce=abc123&site_id=site_123&email=user@example.com&plan=Free
+https://example.com/wp-admin/admin-post.php?action=cmply_connect_callback&cmply_state={connectionState}&site_id=site_123&connection_id=connection_123&connection_code={oneTimeCode}&exchange_url=https%3A%2F%2Fcmply.app%2Fapi%2Fintegrations%2Fwordpress%2Fconnect%2Fexchange
 ```
 
 The plugin exchanges the one-time code and then saves:
@@ -175,9 +180,7 @@ If the user creates a new site from this flow:
 
 ## Security Notes
 
-The WordPress plugin includes a WordPress nonce in `return_url`.
-
-CMPly does not need to verify the nonce. WordPress verifies it when the callback returns.
+The WordPress plugin sends a signed callback-state token separately from `return_url`. CMPly must preserve it and return it unchanged as `cmply_state`. WordPress validates its signature, administrator ID, and expiration when the callback returns.
 
 CMPly must still prevent open redirects by validating `return_url`.
 

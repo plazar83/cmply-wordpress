@@ -9,7 +9,7 @@ The plugin is built for the WordPress.org plugin directory with the public plugi
 - Cookie consent SDK injection in the public `<head>`.
 - Early script loading without `defer` or `async` so CMPly can block third-party scripts before they run.
 - WordPress admin dashboard inspired by CookieYes-style plugin screens.
-- `Connect to CMPly` flow with a short-lived one-time code and server-side credential exchange.
+- `Connect to CMPly` flow with a short-lived signed callback state, single-use authorization code, and server-side credential exchange.
 - Current plan and monthly pageview usage synchronized on connect and verification.
 - Manual Site ID fallback.
 - Google Consent Mode overview screen.
@@ -45,7 +45,7 @@ The WordPress plugin already points the connect button to:
 https://cmply.app/integrations/wordpress/connect
 ```
 
-The CMPly web app creates a ten-minute single-use code. WordPress exchanges it server-to-server; the permanent API key is never placed in a callback URL. See:
+WordPress creates a signed callback-state token that expires after 30 minutes. The CMPly web app separately creates a ten-minute single-use authorization code. WordPress exchanges that code server-to-server; the permanent API key is never placed in a callback URL. See:
 
 [docs/cmply-app-wordpress-connect.md](docs/cmply-app-wordpress-connect.md)
 
