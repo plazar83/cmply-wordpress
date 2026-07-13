@@ -32,7 +32,35 @@ if (Test-Path -LiteralPath $archivePath) {
     Remove-Item -LiteralPath $archivePath -Force
 }
 
-Compress-Archive -Path $pluginRoot -DestinationPath $archivePath -CompressionLevel Optimal
+Add-Type -AssemblyName System.IO.Compression
+$archiveStream = [System.IO.File]::Open($archivePath, [System.IO.FileMode]::CreateNew)
+$archive = New-Object System.IO.Compression.ZipArchive(
+    $archiveStream,
+    [System.IO.Compression.ZipArchiveMode]::Create,
+    $false
+)
+
+try {
+    Get-ChildItem -LiteralPath $pluginRoot -Recurse -File | ForEach-Object {
+        $relativePath = $_.FullName.Substring($stagingRoot.Length + 1).Replace('\', '/')
+        $entry = $archive.CreateEntry($relativePath, [System.IO.Compression.CompressionLevel]::Optimal)
+        $entryStream = $entry.Open()
+        $sourceStream = [System.IO.File]::OpenRead($_.FullName)
+
+        try {
+            $sourceStream.CopyTo($entryStream)
+        }
+        finally {
+            $sourceStream.Dispose()
+            $entryStream.Dispose()
+        }
+    }
+}
+finally {
+    $archive.Dispose()
+    $archiveStream.Dispose()
+}
+
 Remove-Item -LiteralPath $stagingRoot -Recurse -Force
 
 Write-Output $archivePath
