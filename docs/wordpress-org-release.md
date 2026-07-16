@@ -20,14 +20,14 @@ The normal WordPress.org account password is not used for SVN automation.
 4. Run the PHP checks, connection-state regression test, package build, and
    Plugin Check against the resulting ZIP.
 5. Commit and push the release source to GitHub.
-6. Publish a non-draft, non-prerelease GitHub Release whose tag is exactly the
-   version, for example `1.0.19`. Do not prefix the tag with `v`.
+6. Create and push an annotated Git tag that is exactly the version, for
+   example `1.0.19`. Do not prefix the tag with `v`.
 
 The workflow refuses to deploy when the GitHub tag, PHP plugin version, and
 readme stable tag differ. It copies only the distributable plugin files into a
 clean build directory, publishes that directory to WordPress.org `trunk` and a
 matching SVN tag, copies `.wordpress-org` artwork to SVN `assets`, generates a
-ZIP, and attaches the ZIP to the GitHub Release.
+ZIP, creates the GitHub Release, and attaches the ZIP to it.
 
 ## Release safety
 
@@ -35,8 +35,8 @@ ZIP, and attaches the ZIP to the GitHub Release.
   new patch version for every correction.
 - Release `1.0.18` was published manually before this workflow existed. The
   first automated production release must therefore be newer than `1.0.18`.
-- Keep the GitHub Release as a draft until all package checks pass. Publishing
-  the release is the production deployment trigger.
+- Do not push the Git tag until all package checks pass. Pushing the tag is the
+  production deployment trigger.
 - If deployment fails before the SVN commit, correct the source or secrets and
   rerun the failed workflow. If SVN already contains the tag, increment the
   plugin version instead of replacing the published tag.

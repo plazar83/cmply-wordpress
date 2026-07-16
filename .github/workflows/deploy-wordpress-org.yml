@@ -1,8 +1,9 @@
 name: Deploy WordPress.org release
 
 on:
-  release:
-    types: [released]
+  push:
+    tags:
+      - "*.*.*"
 
 permissions:
   contents: write
@@ -14,7 +15,6 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to WordPress.org
-    if: ${{ !github.event.release.draft && !github.event.release.prerelease }}
     runs-on: ubuntu-latest
 
     steps:
@@ -74,4 +74,6 @@ jobs:
       - name: Attach distributable ZIP to GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          name: CMPly ${{ github.ref_name }}
+          generate_release_notes: true
           files: ${{ steps.deploy.outputs.zip-path }}
