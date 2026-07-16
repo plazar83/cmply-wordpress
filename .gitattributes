@@ -1,0 +1,17 @@
+*.css text eol=lf
+*.md text eol=lf
+*.php text eol=lf
+*.svg text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+LICENSE text eol=lf
+
+/.github export-ignore
+/.wordpress-org export-ignore
+/dist export-ignore
+/docs export-ignore
+/tests export-ignore
+/tools export-ignore
+/.gitattributes export-ignore
+/README.md export-ignore

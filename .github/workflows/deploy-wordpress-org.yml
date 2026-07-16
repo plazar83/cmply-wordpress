@@ -1,0 +1,77 @@
+name: Deploy WordPress.org release
+
+on:
+  release:
+    types: [released]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wordpress-org-release
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to WordPress.org
+    if: ${{ !github.event.release.draft && !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+
+      - name: Validate release version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="${GITHUB_REF_NAME}"
+          plugin_version="$(sed -nE 's/^ \* Version:[[:space:]]*([^[:space:]]+).*/\1/p' cmply.php | head -n 1)"
+          stable_tag="$(sed -nE 's/^Stable tag:[[:space:]]*([^[:space:]]+).*/\1/p' readme.txt | head -n 1)"
+
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must use the x.y.z format without a leading v: ${version}" >&2
+            exit 1
+          fi
+
+          if [[ "${plugin_version}" != "${version}" ]]; then
+            echo "cmply.php version ${plugin_version} does not match release tag ${version}." >&2
+            exit 1
+          fi
+
+          if [[ "${stable_tag}" != "${version}" ]]; then
+            echo "readme.txt Stable tag ${stable_tag} does not match release tag ${version}." >&2
+            exit 1
+          fi
+
+      - name: Stage distributable plugin files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          build_dir="${RUNNER_TEMP}/cmply-build"
+          mkdir -p "${build_dir}"
+          cp -R assets includes cmply.php LICENSE readme.txt uninstall.php "${build_dir}/"
+
+          test -f "${build_dir}/cmply.php"
+          test -f "${build_dir}/readme.txt"
+          test -f "${build_dir}/includes/class-cmply.php"
+
+          echo "BUILD_DIR=${build_dir}" >> "${GITHUB_ENV}"
+
+      - name: Deploy plugin and assets
+        id: deploy
+        uses: 10up/action-wordpress-plugin-deploy@2.3.0
+        with:
+          generate-zip: true
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: cmply
+          ASSETS_DIR: .wordpress-org
+
+      - name: Attach distributable ZIP to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.deploy.outputs.zip-path }}

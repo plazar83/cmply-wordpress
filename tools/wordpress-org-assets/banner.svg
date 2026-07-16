@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1544" height="500" viewBox="0 0 1544 500">
+  <defs>
+    <linearGradient id="background" x1="90" y1="20" x2="1454" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F1F6FF"/>
+      <stop offset="1" stop-color="#F4F0FF"/>
+    </linearGradient>
+    <linearGradient id="button" x1="1050" y1="343" x2="1307" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F71E4"/>
+      <stop offset="1" stop-color="#5D57BA"/>
+    </linearGradient>
+    <filter id="shadow" x="900" y="36" width="570" height="430" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#64748B" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+
+  <rect width="1544" height="500" fill="url(#background)"/>
+  <circle cx="1490" cy="22" r="240" fill="#5D57BA" fill-opacity="0.08"/>
+  <circle cx="54" cy="500" r="205" fill="#2F71E4" fill-opacity="0.08"/>
+  <path d="M0 414C254 345 426 468 676 410C893 359 1067 225 1544 277V500H0V414Z" fill="#2F71E4" fill-opacity="0.035"/>
+
+  <g transform="translate(132 123) scale(2.45)" fill="#0B0F19">
+    <path d="M207.462 60.4807V53.1207H226.79C229.35 53.1207 230.63 51.8194 230.63 49.2167V46.0807H210.854C207.099 46.0807 204.347 45.142 202.598 43.2647C200.891 41.3874 200.038 38.9554 200.038 35.9687V13.1207H209.318V34.8807C209.318 37.4407 210.598 38.7207 213.158 38.7207H230.309V13.1207H239.91V50.3687C239.91 53.398 239.035 55.83 237.286 57.6647C235.536 59.542 232.806 60.4807 229.094 60.4807H207.462Z"/>
+    <path d="M183.725 46.0807V0.320688H193.005V46.0807H183.725Z"/>
+    <path d="M124.998 46.0807V0.320688H163.334C168.07 0.320688 171.739 1.51535 174.342 3.90469C176.987 6.29402 178.31 9.92069 178.31 14.7847C178.31 19.6487 176.987 23.2754 174.342 25.6647C171.739 28.054 168.07 29.2487 163.334 29.2487H135.238V46.0807H124.998ZM162.118 8.64069H135.238V20.8647L162.118 20.9287C163.995 20.9287 165.424 20.4594 166.406 19.5207C167.43 18.582 167.942 17.0034 167.942 14.7847C167.942 12.5234 167.43 10.9447 166.406 10.0487C165.424 9.11002 163.995 8.64069 162.118 8.64069Z"/>
+    <path d="M56.185 46.0807V0.320688H64.761L85.945 15.1687H86.265L107.449 0.320688H116.025V46.0807H105.785V13.1207L91.257 22.8487V46.0807H81.017V22.8487L66.425 13.1207V46.0807H56.185Z"/>
+    <path d="M26.112 46.4007C17.664 46.4007 11.2 44.4594 6.72 40.5767C2.24 36.6514 0 30.8487 0 23.1687C0 15.5314 2.24 9.75002 6.72 5.82469C11.2 1.89936 17.664 -0.041978 26.112 0.000688154L49.152 0.128687V8.32069H26.816C21.2693 8.32069 17.152 9.49402 14.464 11.8407C11.776 14.1874 10.432 17.9634 10.432 23.1687C10.432 28.374 11.776 32.1714 14.464 34.5607C17.152 36.9074 21.2693 38.0807 26.816 38.0807H49.792V46.4007H26.112Z"/>
+  </g>
+  <text x="136" y="332" fill="#111827" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="500">Cookie consent for WordPress</text>
+  <text x="138" y="383" fill="#4B5563" font-family="Arial, Helvetica, sans-serif" font-size="23">Connect your site. Respect every choice.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="948" y="70" width="450" height="350" rx="28" fill="#FFFFFF"/>
+    <circle cx="1008" cy="130" r="23" fill="#EEF2FF"/>
+    <circle cx="1008" cy="130" r="12" fill="#5D57BA"/>
+    <circle cx="1003" cy="126" r="2.5" fill="#FFFFFF"/>
+    <circle cx="1013" cy="132" r="2.5" fill="#FFFFFF"/>
+    <text x="1045" y="139" fill="#111827" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700">Your privacy, your choice.</text>
+    <text x="990" y="192" fill="#4B5563" font-family="Arial, Helvetica, sans-serif" font-size="20">Choose how this site may use cookies.</text>
+
+    <rect x="990" y="225" width="366" height="52" rx="14" fill="#F8FAFC"/>
+    <text x="1012" y="258" fill="#1F2937" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="600">Necessary</text>
+    <rect x="1284" y="240" width="48" height="22" rx="11" fill="#CBD5E1"/>
+    <circle cx="1321" cy="251" r="8" fill="#FFFFFF"/>
+
+    <rect x="990" y="289" width="366" height="52" rx="14" fill="#F8FAFC"/>
+    <text x="1012" y="322" fill="#1F2937" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="600">Analytics</text>
+    <rect x="1284" y="304" width="48" height="22" rx="11" fill="#5D57BA"/>
+    <circle cx="1321" cy="315" r="8" fill="#FFFFFF"/>
+
+    <rect x="990" y="360" width="160" height="42" rx="11" fill="#EEF2FF"/>
+    <text x="1023" y="387" fill="#4F46E5" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">Settings</text>
+    <rect x="1164" y="360" width="192" height="42" rx="11" fill="url(#button)"/>
+    <text x="1209" y="387" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">Accept all</text>
+  </g>
+</svg>
