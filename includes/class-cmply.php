@@ -17,6 +17,8 @@ final class CMPly_Cookie_Consent {
 	const SECRET_OPTION_NAME = 'cmply_api_key';
 	const CONNECTION_OPTION_NAME = 'cmply_connection_id';
 	const SERVICE_HOST = 'cmply.app';
+	const GCM_CACHE_PREFIX = 'cmply_gcm_';
+	const GCM_CACHE_TTL = 300;
 	private static $connection_state_error = 'callback_invalid';
 
 	/**
@@ -55,6 +57,8 @@ final class CMPly_Cookie_Consent {
 		add_action( 'admin_post_cmply_connect_callback', array( __CLASS__, 'handle_connect_callback' ) );
 		add_action( 'admin_post_cmply_disconnect', array( __CLASS__, 'handle_disconnect' ) );
 		add_action( 'admin_post_cmply_verify_connection', array( __CLASS__, 'handle_verify_connection' ) );
+		add_action( 'admin_post_cmply_save_gcm', array( __CLASS__, 'handle_save_gcm' ) );
+		add_action( 'admin_post_cmply_refresh_gcm', array( __CLASS__, 'handle_refresh_gcm' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'configuration_notice' ) );
 		add_filter( 'plugin_action_links_' . CMPLY_COOKIE_CONSENT_BASENAME, array( __CLASS__, 'settings_link' ) );
 
@@ -455,6 +459,7 @@ final class CMPly_Cookie_Consent {
 		check_admin_referer( 'cmply_disconnect' );
 
 		$options                  = self::options();
+		self::clear_gcm_cache( $options );
 		$options['site_id']       = '';
 		$options['account_email'] = '';
 		$options['plan']          = 'Free';
@@ -489,6 +494,66 @@ final class CMPly_Cookie_Consent {
 		$status = self::refresh_account_snapshot( $options ) ? 'cmply_verified=1' : 'cmply_error=verify_failed';
 		wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&' . $status ) );
 		exit;
+	}
+
+	/**
+	 * Save Google Consent Mode settings to the connected CMPly site.
+	 *
+	 * @return void
+	 */
+	public static function handle_save_gcm() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to update CMPly.', 'cmply' ) );
+		}
+
+		check_admin_referer( 'cmply_save_gcm' );
+
+		$options  = self::options();
+		$raw_rows = isset( $_POST['defaults'] ) ? map_deep( wp_unslash( $_POST['defaults'] ), 'sanitize_text_field' ) : array();
+		if ( is_array( $raw_rows ) ) {
+			$raw_rows = array_values(
+				array_filter(
+					$raw_rows,
+					function ( $row ) {
+						return ! is_array( $row ) || empty( $row['_remove'] );
+					}
+				)
+			);
+		}
+		$defaults = self::normalize_gcm_defaults( $raw_rows );
+		if ( false === $defaults ) {
+			self::redirect_gcm( 'cmply_gcm_error=invalid_settings' );
+		}
+
+		$raw_mode = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'advanced';
+		$settings = array(
+			'enabled'  => ! empty( $_POST['enabled'] ),
+			'mode'     => 'basic' === $raw_mode ? 'basic' : 'advanced',
+			'defaults' => $defaults,
+		);
+		$result   = self::request_gcm_settings( $options, 'PUT', $settings );
+
+		if ( ! empty( $result['ok'] ) ) {
+			set_transient( self::gcm_cache_key( $options ), $result['data'], self::GCM_CACHE_TTL );
+			self::redirect_gcm( 'cmply_gcm_saved=1' );
+		}
+
+		self::redirect_gcm( 'cmply_gcm_error=' . sanitize_key( $result['error'] ) );
+	}
+
+	/**
+	 * Clear the GCM cache and fetch a fresh snapshot on the next screen load.
+	 *
+	 * @return void
+	 */
+	public static function handle_refresh_gcm() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to refresh CMPly.', 'cmply' ) );
+		}
+
+		check_admin_referer( 'cmply_refresh_gcm' );
+		self::clear_gcm_cache( self::options() );
+		self::redirect_gcm( 'cmply_gcm_refreshed=1' );
 	}
 
 	/**
@@ -769,61 +834,332 @@ final class CMPly_Cookie_Consent {
 	}
 
 	/**
+	 * Return the default Google Consent Mode row.
+	 *
+	 * @param string $region Region code.
+	 * @return array<string, string>
+	 */
+	private static function gcm_default( $region = 'all' ) {
+		return array(
+			'region'                => $region,
+			'analytics_storage'     => 'denied',
+			'ad_storage'            => 'denied',
+			'functionality_storage' => 'denied',
+			'security_storage'      => 'granted',
+			'ad_user_data'          => 'denied',
+			'ad_personalization'     => 'denied',
+		);
+	}
+
+	/**
+	 * Normalize and validate regional Google Consent Mode defaults.
+	 *
+	 * @param mixed $rows Raw defaults.
+	 * @return array<int, array<string, string>>|false
+	 */
+	private static function normalize_gcm_defaults( $rows ) {
+		if ( ! is_array( $rows ) || empty( $rows ) || count( $rows ) > 50 ) {
+			return false;
+		}
+
+		$consent_keys = array( 'analytics_storage', 'ad_storage', 'functionality_storage', 'security_storage', 'ad_user_data', 'ad_personalization' );
+		$regions      = array();
+		$normalized   = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) || ! isset( $row['region'] ) ) {
+				return false;
+			}
+
+			$region = strtoupper( sanitize_text_field( $row['region'] ) );
+			$region = 'ALL' === $region ? 'all' : $region;
+			if ( ! preg_match( '/^(all|[A-Z]{2}(?:-[A-Z0-9]{1,3})?)$/', $region ) || isset( $regions[ $region ] ) ) {
+				return false;
+			}
+
+			$item = array( 'region' => $region );
+			foreach ( $consent_keys as $key ) {
+				$value = isset( $row[ $key ] ) ? sanitize_key( $row[ $key ] ) : '';
+				if ( ! in_array( $value, array( 'granted', 'denied' ), true ) ) {
+					return false;
+				}
+				$item[ $key ] = $value;
+			}
+
+			$regions[ $region ] = true;
+			$normalized[]       = $item;
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Normalize a GCM settings response from CMPly.
+	 *
+	 * @param mixed $settings Raw settings.
+	 * @return array<string, mixed>|false
+	 */
+	private static function normalize_gcm_settings( $settings ) {
+		if ( ! is_array( $settings ) ) {
+			return false;
+		}
+
+		$defaults = isset( $settings['defaults'] ) ? self::normalize_gcm_defaults( $settings['defaults'] ) : false;
+		if ( false === $defaults ) {
+			return false;
+		}
+
+		return array(
+			'enabled'  => ! empty( $settings['enabled'] ),
+			'mode'     => isset( $settings['mode'] ) && 'basic' === $settings['mode'] ? 'basic' : 'advanced',
+			'defaults' => $defaults,
+		);
+	}
+
+	/**
+	 * Build the cache key for the current connected site.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return string
+	 */
+	private static function gcm_cache_key( $options ) {
+		return self::GCM_CACHE_PREFIX . md5( (string) $options['site_id'] );
+	}
+
+	/**
+	 * Remove a site's cached GCM settings.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return void
+	 */
+	private static function clear_gcm_cache( $options ) {
+		if ( ! empty( $options['site_id'] ) ) {
+			delete_transient( self::gcm_cache_key( $options ) );
+		}
+	}
+
+	/**
+	 * Request GCM settings from CMPly.
+	 *
+	 * @param array<string, mixed>      $options  Plugin options.
+	 * @param string                    $method   HTTP method.
+	 * @param array<string, mixed>|null $settings Settings to save.
+	 * @return array<string, mixed>
+	 */
+	private static function request_gcm_settings( $options, $method = 'POST', $settings = null ) {
+		$api_key = sanitize_text_field( get_option( self::SECRET_OPTION_NAME, '' ) );
+		if ( empty( $options['site_id'] ) || empty( $api_key ) ) {
+			return array( 'ok' => false, 'error' => 'not_connected' );
+		}
+
+		$body = array(
+			'siteId' => (string) $options['site_id'],
+			'apiKey'  => $api_key,
+			'siteUrl' => home_url(),
+		);
+		if ( ! empty( $options['connection_id'] ) ) {
+			$body['connectionId'] = (string) $options['connection_id'];
+		}
+		if ( is_array( $settings ) ) {
+			$body = array_merge( $body, $settings );
+		}
+
+		$path     = '/api/integrations/wordpress/sites/' . rawurlencode( (string) $options['site_id'] ) . '/gcm';
+		$response = wp_safe_remote_request(
+			self::service_endpoint( $options, $path ),
+			array(
+				'method'  => $method,
+				'timeout' => 15,
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode( $body ),
+			)
+		);
+		if ( is_wp_error( $response ) ) {
+			return array( 'ok' => false, 'error' => 'service_unavailable' );
+		}
+
+		$status  = wp_remote_retrieve_response_code( $response );
+		$payload = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( 200 !== $status || ! is_array( $payload ) || empty( $payload['ok'] ) ) {
+			if ( 401 === $status ) {
+				$error = 'connection_failed';
+			} elseif ( 400 === $status ) {
+				$error = 'invalid_settings';
+			} else {
+				$error = 'service_unavailable';
+			}
+
+			return array( 'ok' => false, 'error' => $error );
+		}
+
+		$data = isset( $payload['data'] ) ? self::normalize_gcm_settings( $payload['data'] ) : false;
+		if ( false === $data ) {
+			return array( 'ok' => false, 'error' => 'invalid_response' );
+		}
+
+		return array( 'ok' => true, 'data' => $data );
+	}
+
+	/**
+	 * Get cached GCM settings, fetching them from CMPly when necessary.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return array<string, mixed>
+	 */
+	private static function get_gcm_settings( $options ) {
+		if ( ! self::has_account_connection( $options ) || empty( get_option( self::SECRET_OPTION_NAME, '' ) ) ) {
+			return array( 'ok' => false, 'error' => 'not_connected' );
+		}
+
+		$cache_key = self::gcm_cache_key( $options );
+		$cached    = get_transient( $cache_key );
+		if ( false !== $cached ) {
+			$data = self::normalize_gcm_settings( $cached );
+			if ( false !== $data ) {
+				return array( 'ok' => true, 'data' => $data, 'cached' => true );
+			}
+			delete_transient( $cache_key );
+		}
+
+		$result = self::request_gcm_settings( $options );
+		if ( ! empty( $result['ok'] ) ) {
+			set_transient( $cache_key, $result['data'], self::GCM_CACHE_TTL );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Render a consent-state select.
+	 *
+	 * @param string $name  Field name.
+	 * @param string $value Current value.
+	 * @return void
+	 */
+	private static function render_gcm_select( $name, $value ) {
+		?>
+		<select name="<?php echo esc_attr( $name ); ?>">
+			<option value="denied" <?php selected( $value, 'denied' ); ?>><?php esc_html_e( 'Denied', 'cmply' ); ?></option>
+			<option value="granted" <?php selected( $value, 'granted' ); ?>><?php esc_html_e( 'Granted', 'cmply' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Redirect to the GCM screen with a status query.
+	 *
+	 * @param string $query Status query.
+	 * @return void
+	 */
+	private static function redirect_gcm( $query ) {
+		wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=gcm&' . $query ) );
+		exit;
+	}
+
+	/**
 	 * Render GCM screen.
 	 *
 	 * @param array<string, mixed> $options Plugin options.
 	 * @return void
 	 */
 	private static function render_gcm_screen( $options ) {
+		$result   = self::get_gcm_settings( $options );
+		$settings = ! empty( $result['ok'] ) ? $result['data'] : false;
+		$defaults = $settings ? $settings['defaults'] : array();
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The nonce below protects this read-only form-row helper.
+		if ( isset( $_GET['cmply_add_region'] ) ) {
+			check_admin_referer( 'cmply_add_gcm_region' );
+			$defaults[] = self::gcm_default( '' );
+		}
+
+		$messages = array(
+			'not_connected'       => __( 'Connect this WordPress site to CMPly before managing Google Consent Mode.', 'cmply' ),
+			'connection_failed'   => __( 'CMPly could not verify the saved connection. Reconnect the site and try again.', 'cmply' ),
+			'invalid_settings'    => __( 'The GCM settings are invalid. Use unique regions such as all, DE, or US-CA and review every consent value.', 'cmply' ),
+			'invalid_response'    => __( 'CMPly returned an unexpected GCM response. Refresh the page or try again later.', 'cmply' ),
+			'service_unavailable' => __( 'CMPly is temporarily unavailable. Your existing settings were not changed.', 'cmply' ),
+		);
+		$error    = ! empty( $result['error'] ) && isset( $messages[ $result['error'] ] ) ? $result['error'] : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect status used only to select an admin notice.
+		$query_error = isset( $_GET['cmply_gcm_error'] ) ? sanitize_key( wp_unslash( $_GET['cmply_gcm_error'] ) ) : '';
+		if ( isset( $messages[ $query_error ] ) ) {
+			$error = $query_error;
+		}
 		?>
 		<div class="cmply-panel cmply-gcm">
 			<div class="cmply-titlebar">
 				<h1><?php esc_html_e( 'Google Consent Mode Settings', 'cmply' ); ?></h1>
-				<a class="cmply-button cmply-button-primary" href="https://cmply.app/dashboard" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Configure in Web App', 'cmply' ); ?></a>
-			</div>
-
-			<div class="cmply-setting-row">
-				<div>
-					<h2><?php esc_html_e( 'Enable Google Consent Mode (GCM)', 'cmply' ); ?></h2>
-				</div>
-				<div>
-					<span class="cmply-toggle" aria-hidden="true"></span>
-					<p><?php esc_html_e( 'CMPly can implement Google Consent Mode from your CMPly site settings. When auto-inject is enabled, the WordPress plugin loads the SDK early so consent defaults can run before tags.', 'cmply' ); ?></p>
+				<div class="cmply-titlebar-actions">
+					<?php if ( $settings ) : ?>
+						<a class="cmply-button cmply-button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cmply_refresh_gcm' ), 'cmply_refresh_gcm' ) ); ?>"><?php esc_html_e( 'Refresh', 'cmply' ); ?></a>
+					<?php endif; ?>
+					<a class="cmply-button cmply-button-primary" href="https://cmply.app/dashboard" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open Web App', 'cmply' ); ?></a>
 				</div>
 			</div>
 
-			<hr />
+			<?php if ( $error ) : ?>
+				<div class="notice notice-error inline"><p><?php echo esc_html( $messages[ $error ] ); ?></p></div>
+			<?php endif; ?>
+			<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect flag used only to display a success notice. ?>
+			<?php if ( isset( $_GET['cmply_gcm_saved'] ) ) : ?>
+				<div class="notice notice-success inline"><p><?php esc_html_e( 'Google Consent Mode settings saved in CMPly.', 'cmply' ); ?></p></div>
+			<?php endif; ?>
 
-			<h2><?php esc_html_e( 'Default consent settings', 'cmply' ); ?></h2>
-			<p><?php esc_html_e( 'The default consent state applies to non-necessary categories until visitor consent is received. Manage regional defaults in the CMPly web app.', 'cmply' ); ?></p>
+			<?php if ( $settings ) : ?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<?php wp_nonce_field( 'cmply_save_gcm' ); ?>
+					<input type="hidden" name="action" value="cmply_save_gcm" />
 
-			<table class="widefat cmply-gcm-table">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'Analytics', 'cmply' ); ?></th>
-						<th><?php esc_html_e( 'Advertisement', 'cmply' ); ?></th>
-						<th><?php esc_html_e( 'Functional', 'cmply' ); ?></th>
-						<th><?php esc_html_e( 'Necessary', 'cmply' ); ?></th>
-						<th><?php esc_html_e( 'Share user data with Google', 'cmply' ); ?></th>
-						<th><?php esc_html_e( 'Use data for ads personalisation', 'cmply' ); ?></th>
-						<th><?php esc_html_e( 'Region', 'cmply' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td><?php esc_html_e( 'Denied', 'cmply' ); ?></td>
-						<td><?php esc_html_e( 'Denied', 'cmply' ); ?></td>
-						<td><?php esc_html_e( 'Denied', 'cmply' ); ?></td>
-						<td><?php esc_html_e( 'Granted', 'cmply' ); ?></td>
-						<td><?php esc_html_e( 'Denied', 'cmply' ); ?></td>
-						<td><?php esc_html_e( 'Denied', 'cmply' ); ?></td>
-						<td><?php esc_html_e( 'All', 'cmply' ); ?></td>
-					</tr>
-				</tbody>
-			</table>
+					<div class="cmply-setting-row">
+						<div><h2><?php esc_html_e( 'Google Consent Mode', 'cmply' ); ?></h2></div>
+						<div class="cmply-gcm-controls">
+							<label><input type="checkbox" name="enabled" value="1" <?php checked( ! empty( $settings['enabled'] ) ); ?> /> <?php esc_html_e( 'Enabled', 'cmply' ); ?></label>
+							<label><?php esc_html_e( 'Mode', 'cmply' ); ?>
+								<select name="mode">
+									<option value="advanced" <?php selected( $settings['mode'], 'advanced' ); ?>><?php esc_html_e( 'Advanced', 'cmply' ); ?></option>
+									<option value="basic" <?php selected( $settings['mode'], 'basic' ); ?>><?php esc_html_e( 'Basic', 'cmply' ); ?></option>
+								</select>
+							</label>
+							<p><?php esc_html_e( 'CMPly loads these defaults before consent-aware tags. Advanced mode sends denied defaults and updates them after the visitor makes a choice; basic mode delays supported tags until consent.', 'cmply' ); ?></p>
+						</div>
+					</div>
 
-			<a class="cmply-button cmply-button-primary" href="https://cmply.app/dashboard" target="_blank" rel="noopener noreferrer"><?php esc_html_e( '+ New Region', 'cmply' ); ?></a>
+					<hr />
+					<h2><?php esc_html_e( 'Regional consent defaults', 'cmply' ); ?></h2>
+					<p><?php esc_html_e( 'Use all for the global fallback, a two-letter country code such as DE, or a subdivision such as US-CA. Each region may appear only once.', 'cmply' ); ?></p>
 
+					<div class="cmply-gcm-table-wrap">
+						<table class="widefat cmply-gcm-table">
+							<thead><tr>
+								<th><?php esc_html_e( 'Analytics', 'cmply' ); ?></th>
+								<th><?php esc_html_e( 'Ads', 'cmply' ); ?></th>
+								<th><?php esc_html_e( 'Functionality', 'cmply' ); ?></th>
+								<th><?php esc_html_e( 'Security', 'cmply' ); ?></th>
+								<th><?php esc_html_e( 'Ad user data', 'cmply' ); ?></th>
+								<th><?php esc_html_e( 'Ad personalization', 'cmply' ); ?></th>
+								<th><?php esc_html_e( 'Region', 'cmply' ); ?></th>
+								<th><?php esc_html_e( 'Remove', 'cmply' ); ?></th>
+							</tr></thead>
+							<tbody>
+								<?php foreach ( $defaults as $index => $row ) : ?>
+									<tr>
+										<?php foreach ( array( 'analytics_storage', 'ad_storage', 'functionality_storage', 'security_storage', 'ad_user_data', 'ad_personalization' ) as $key ) : ?>
+											<td><?php self::render_gcm_select( 'defaults[' . $index . '][' . $key . ']', $row[ $key ] ); ?></td>
+										<?php endforeach; ?>
+										<td><input class="cmply-region-input" name="defaults[<?php echo esc_attr( $index ); ?>][region]" value="<?php echo esc_attr( $row['region'] ); ?>" placeholder="all or DE" /></td>
+										<td><label><input type="checkbox" name="defaults[<?php echo esc_attr( $index ); ?>][_remove]" value="1" /> <span class="screen-reader-text"><?php esc_html_e( 'Remove this region', 'cmply' ); ?></span></label></td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+
+					<p class="cmply-gcm-actions">
+						<a class="cmply-button cmply-button-secondary" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'page' => 'cmply', 'tab' => 'gcm', 'cmply_add_region' => 1 ), admin_url( 'options-general.php' ) ), 'cmply_add_gcm_region' ) ); ?>"><?php esc_html_e( '+ New Region', 'cmply' ); ?></a>
+						<button class="cmply-button cmply-button-primary" type="submit"><?php esc_html_e( 'Save GCM settings', 'cmply' ); ?></button>
+					</p>
+				</form>
+			<?php endif; ?>
 		</div>
 		<?php
 		self::render_admin_footer();

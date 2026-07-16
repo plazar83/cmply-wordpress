@@ -4,7 +4,7 @@ Tags: cookies, consent, gdpr, cmp, cookie banner
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.19
+Stable tag: 1.0.20
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,7 @@ Features:
 * Optional SDK version query for cache busting.
 * Optional language override with automatic browser-language detection by default.
 * URL path exclusions with wildcard support.
+* Editable Google Consent Mode v2 settings with global and regional consent defaults.
 
 This plugin requires an active CMPly.app site configuration. CMPly provides the consent banner, consent storage, cookie/provider metadata, and related consent-management functionality.
 
@@ -33,7 +34,9 @@ This plugin requires an active CMPly.app site configuration. CMPly provides the 
 
 This plugin connects to CMPly.app, a third-party consent-management service, when CMPly is enabled and a Site ID is configured.
 
-When an administrator chooses Connect or Verify, WordPress sends the site URL, connection identifiers, plugin version, and a short-lived connection code to CMPly. CMPly returns the Site ID and API key server-to-server. The API key is stored as a non-autoloaded WordPress option, is never printed in public HTML, and is deleted on disconnect or uninstall.
+When an administrator chooses Connect or Verify, WordPress sends the site URL, connection identifiers, plugin version, and a short-lived connection code to CMPly. CMPly returns the Site ID and API key server-to-server. When an administrator opens, refreshes, or saves the Google Consent Mode screen, WordPress sends the site URL, Site ID, connection ID, API key, and GCM settings to CMPly. GCM responses are cached in WordPress for five minutes. The API key is stored as a non-autoloaded WordPress option, is never printed in public HTML, and is deleted on disconnect or uninstall.
+
+The administrator-side connection and GCM requests use CMPly endpoints under `https://cmply.app/api/integrations/wordpress/`, including `/sites/{siteId}/gcm`. These requests are used only to authenticate the WordPress connection and read or save the connected site's settings.
 
 The plugin loads the CMPly JavaScript SDK from:
 
@@ -88,6 +91,10 @@ Yes. Add one path per line in Exclude Paths, for example:
 The WordPress plugin stores only its admin settings in the WordPress database. The public consent cookie is created by the CMPly SDK in the visitor's browser.
 
 == Changelog ==
+
+= 1.0.20 =
+* Added authenticated editing of Google Consent Mode v2 and regional consent defaults from WordPress.
+* Added validation, five-minute response caching, manual refresh, and actionable connection errors for GCM settings.
 
 = 1.0.19 =
 * Synchronized the GitHub release source with the reviewed WordPress.org package.

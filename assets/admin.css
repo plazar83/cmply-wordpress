@@ -505,6 +505,19 @@
 	margin-bottom: 18px;
 }
 
+.cmply-titlebar-actions,
+.cmply-gcm-actions,
+.cmply-gcm-controls {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.cmply-gcm-controls p {
+	flex-basis: 100%;
+}
+
 .cmply-gcm,
 .cmply-admin > .cmply-shell > .cmply-panel {
 	margin: 20px 24px;
@@ -539,6 +552,11 @@
 
 .cmply-gcm-table {
 	margin: 18px 0 20px;
+	min-width: 980px;
+}
+
+.cmply-gcm-table-wrap {
+	overflow-x: auto;
 }
 
 .cmply-gcm-table th {
@@ -549,6 +567,17 @@
 .cmply-gcm-table th,
 .cmply-gcm-table td {
 	padding: 16px 12px;
+}
+
+.cmply-gcm-table select {
+	max-width: 140px;
+	width: 100%;
+}
+
+.cmply-region-input {
+	max-width: 110px;
+	text-transform: uppercase;
+	width: 100%;
 }
 
 .cmply-settings-form .form-table th {

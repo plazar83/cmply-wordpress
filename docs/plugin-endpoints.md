@@ -153,17 +153,17 @@ Response:
 
 ### Google Consent Mode Settings
 
-Used if the WordPress GCM tab should become editable instead of linking to the web app.
+Used by the editable WordPress GCM tab. Requests are server-to-server and include the saved connection credentials in the JSON body.
 
 ```text
-GET /api/integrations/wordpress/sites/{siteId}/gcm
+POST /api/integrations/wordpress/sites/{siteId}/gcm
 PUT /api/integrations/wordpress/sites/{siteId}/gcm
 ```
 
 Auth:
 
 ```text
-Authorization: Bearer CONNECTION_TOKEN
+siteId, connectionId, apiKey, siteUrl
 ```
 
 Suggested response/body:
@@ -362,7 +362,7 @@ The token should be treated as a secret:
 1. Complete and test the one-time exchange and verification flow.
 2. Add connection status and remote revocation endpoints.
 3. Add disconnect endpoint.
-4. Add GCM read/write endpoints.
+4. Add GCM read/write endpoints. (Complete)
 5. Add analytics summary endpoint.
 6. Add scan summary and usage endpoints.
 

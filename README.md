@@ -12,7 +12,7 @@ The plugin is built for the WordPress.org plugin directory with the public plugi
 - `Connect to CMPly` flow with a short-lived signed callback state, single-use authorization code, and server-side credential exchange.
 - Current plan and monthly pageview usage synchronized on connect and verification.
 - Manual Site ID fallback.
-- Google Consent Mode overview screen.
+- Editable Google Consent Mode v2 settings with validated regional defaults and cached API reads.
 - Auto-inject or manual embed mode for the CMPly SDK.
 - Official HTTPS SDK URL, optional SDK version query, language override, and excluded paths.
 - WordPress.org-ready `readme.txt` with external service disclosure.
@@ -49,9 +49,9 @@ WordPress creates a signed callback-state token that expires after 30 minutes. T
 
 [docs/cmply-app-wordpress-connect.md](docs/cmply-app-wordpress-connect.md)
 
-## Future Plugin API Requirements
+## Plugin API
 
-The current connection endpoints and future endpoints for editable WordPress-side settings, GCM controls, analytics summaries, and usage are documented here:
+The current connection and GCM endpoints, plus future analytics and usage endpoints, are documented here:
 
 [docs/plugin-endpoints.md](docs/plugin-endpoints.md)
 
