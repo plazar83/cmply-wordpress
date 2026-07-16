@@ -3,13 +3,11 @@
  * Plugin Name: CMPly
  * Plugin URI: https://cmply.app
  * Description: Connects WordPress to CMPly.app for cookie consent, consent records, and consent-based script blocking.
- * Version: 1.0.18
+ * Version: 1.0.19
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author: CMPly
- * Author URI: https://cmply.app
  * Text Domain: cmply
- * Domain Path: /languages
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -20,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CMPLY_COOKIE_CONSENT_VERSION', '1.0.18' );
+define( 'CMPLY_COOKIE_CONSENT_VERSION', '1.0.19' );
 define( 'CMPLY_COOKIE_CONSENT_FILE', __FILE__ );
 define( 'CMPLY_COOKIE_CONSENT_BASENAME', plugin_basename( __FILE__ ) );
 

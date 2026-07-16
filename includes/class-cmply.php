@@ -48,8 +48,6 @@ final class CMPly_Cookie_Consent {
 	 * @return void
 	 */
 	public static function init() {
-		load_plugin_textdomain( 'cmply', false, dirname( CMPLY_COOKIE_CONSENT_BASENAME ) . '/languages' );
-
 		add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
@@ -346,6 +344,7 @@ final class CMPly_Cookie_Consent {
 	 * @return string
 	 */
 	private static function current_tab() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation value; no state is changed.
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'dashboard';
 
 		if ( ! in_array( $tab, array( 'dashboard', 'gcm', 'site-settings' ), true ) ) {
@@ -364,6 +363,7 @@ final class CMPly_Cookie_Consent {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to connect CMPly.', 'cmply' ) );
 		}
+		check_admin_referer( 'cmply_connect_callback' );
 
 		$state = isset( $_GET['cmply_state'] ) ? sanitize_text_field( wp_unslash( $_GET['cmply_state'] ) ) : '';
 		if ( ! self::consume_connection_state( $state ) ) {
@@ -563,6 +563,7 @@ final class CMPly_Cookie_Consent {
 	 * @return void
 	 */
 	private static function render_connection_notice( $options ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect status used only to select a notice.
 		$error = isset( $_GET['cmply_error'] ) ? sanitize_key( wp_unslash( $_GET['cmply_error'] ) ) : '';
 		$messages = array(
 			'missing_site_id'     => __( 'The callback data was incomplete. Start the connection again.', 'cmply' ),
@@ -582,7 +583,9 @@ final class CMPly_Cookie_Consent {
 		);
 
 		if ( $error && isset( $messages[ $error ] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only, sanitized diagnostic text from the redirect URL.
 			$detail = isset( $_GET['cmply_error_detail'] ) ? sanitize_text_field( wp_unslash( $_GET['cmply_error_detail'] ) ) : '';
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only HTTP status displayed in the notice.
 			$status = isset( $_GET['cmply_error_status'] ) ? absint( $_GET['cmply_error_status'] ) : 0;
 			printf( '<div class="notice notice-error inline cmply-notice"><p><strong>%s</strong> %s</p>', esc_html__( 'Connection failed.', 'cmply' ), esc_html( $messages[ $error ] ) );
 			if ( $detail ) {
@@ -592,10 +595,13 @@ final class CMPly_Cookie_Consent {
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect flag used only to display a success notice.
 		if ( isset( $_GET['cmply_connected'] ) ) {
 			echo '<div class="notice notice-success inline cmply-notice"><p>' . esc_html__( 'CMPly connected successfully. Plan and pageview usage were synchronized.', 'cmply' ) . '</p></div>';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect flag used only to display a success notice.
 		} elseif ( isset( $_GET['cmply_verified'] ) ) {
 			echo '<div class="notice notice-success inline cmply-notice"><p>' . esc_html__( 'CMPly connection verified and account information refreshed.', 'cmply' ) . '</p></div>';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect flag used only to display a success notice.
 		} elseif ( isset( $_GET['cmply_disconnected'] ) ) {
 			echo '<div class="notice notice-success inline cmply-notice"><p>' . esc_html__( 'CMPly disconnected and saved credentials removed.', 'cmply' ) . '</p></div>';
 		} elseif ( ! empty( $options['site_id'] ) && ! self::has_account_connection( $options ) ) {
@@ -833,6 +839,7 @@ final class CMPly_Cookie_Consent {
 		$script_url   = self::sdk_url( $options );
 		$is_configured = ! empty( $options['site_id'] );
 		$is_connected  = self::has_account_connection( $options );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect status used only to control reconnect guidance.
 		$connection_error = isset( $_GET['cmply_error'] ) ? sanitize_key( wp_unslash( $_GET['cmply_error'] ) ) : '';
 		$show_connect      = ! $is_connected || 'verify_failed' === $connection_error;
 		?>
@@ -1101,7 +1108,11 @@ final class CMPly_Cookie_Consent {
 	private static function connect_url( $options ) {
 		$base_url   = self::sanitize_service_url( (string) $options['sdk_base_url'] );
 		$state      = self::create_connection_state();
-		$return_url = admin_url( 'admin-post.php?action=cmply_connect_callback' );
+		$return_url = add_query_arg(
+			'_wpnonce',
+			wp_create_nonce( 'cmply_connect_callback' ),
+			admin_url( 'admin-post.php?action=cmply_connect_callback' )
+		);
 
 		$url = add_query_arg(
 			array(

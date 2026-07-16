@@ -5,6 +5,7 @@
 
 define( 'ABSPATH', __DIR__ );
 define( 'MINUTE_IN_SECONDS', 60 );
+define( 'CMPLY_COOKIE_CONSENT_VERSION', '1.0.19' );
 define( 'CMPLY_COOKIE_CONSENT_BASENAME', 'cmply/cmply.php' );
 
 $test_user_id = 42;
@@ -52,6 +53,41 @@ function esc_url_raw( $value ) {
 	return $value;
 }
 
+function esc_url( $value ) {
+	return $value;
+}
+
+function wp_parse_url( $value, $component = -1 ) {
+	return parse_url( $value, $component );
+}
+
+function wp_create_nonce( $action ) {
+	return 'cmply_connect_callback' === $action ? 'test-callback-nonce' : '';
+}
+
+function admin_url( $path = '' ) {
+	return 'https://example.test/wp-admin/' . ltrim( $path, '/' );
+}
+
+function home_url() {
+	return 'https://example.test';
+}
+
+function add_query_arg( $key, $value = null, $url = null ) {
+	if ( is_array( $key ) ) {
+		$args = $key;
+		$url  = $value;
+	} else {
+		$args = array( $key => $value );
+	}
+
+	$parts = parse_url( $url );
+	parse_str( $parts['query'] ?? '', $query );
+	$query = array_merge( $query, $args );
+
+	return $parts['scheme'] . '://' . $parts['host'] . ( $parts['path'] ?? '' ) . '?' . http_build_query( $query, '', '&', PHP_QUERY_RFC3986 );
+}
+
 function untrailingslashit( $value ) {
 	return rtrim( $value, '/\\' );
 }
@@ -61,8 +97,10 @@ require_once dirname( __DIR__ ) . '/includes/class-cmply.php';
 $class   = new ReflectionClass( 'CMPly_Cookie_Consent' );
 $create  = $class->getMethod( 'create_connection_state' );
 $consume = $class->getMethod( 'consume_connection_state' );
+$connect = $class->getMethod( 'connect_url' );
 $create->setAccessible( true );
 $consume->setAccessible( true );
+$connect->setAccessible( true );
 
 function assert_state( $condition, $message ) {
 	if ( ! $condition ) {
@@ -86,6 +124,16 @@ $test_user_id = 42;
 $payload = '42.' . ( time() - 1 ) . '.expiredtoken';
 $expired = $payload . '.' . hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
 assert_state( ! $consume->invoke( null, $expired ), 'expired state must fail' );
+
+$connect_url = $connect->invoke( null, array( 'sdk_base_url' => 'https://cmply.app' ) );
+parse_str( wp_parse_url( $connect_url, PHP_URL_QUERY ), $connect_query );
+$return_url = $connect_query['return_url'] ?? '';
+parse_str( wp_parse_url( $return_url, PHP_URL_QUERY ), $return_query );
+assert_state( 'cmply_connect_callback' === ( $return_query['action'] ?? '' ), 'callback action must be preserved' );
+assert_state( 'test-callback-nonce' === ( $return_query['_wpnonce'] ?? '' ), 'callback URL must include a WordPress nonce' );
+
+$plugin_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-cmply.php' );
+assert_state( false !== strpos( $plugin_source, "check_admin_referer( 'cmply_connect_callback' )" ), 'callback handler must verify the WordPress nonce' );
 
 $sanitized = CMPly_Cookie_Consent::sanitize_options(
 	array(
