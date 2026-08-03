@@ -182,6 +182,8 @@ If the user creates a new site from this flow:
 
 The WordPress plugin sends a signed callback-state token separately from `return_url`. CMPly must preserve it and return it unchanged as `cmply_state`. WordPress validates its signature, administrator ID, and expiration when the callback returns.
 
+The plugin also includes a standard WordPress nonce in `return_url`. If that nested nonce survives the redirect, WordPress validates it as an additional check. The signed, administrator-bound `cmply_state` remains mandatory and is sufficient for the callback when the web connection flow drops the nested nonce.
+
 CMPly must still prevent open redirects by validating `return_url`.
 
 The permanent API key must never be placed in a URL, browser storage, HTML, JavaScript, or logs. Only the short-lived one-time code may travel through the callback URL.
