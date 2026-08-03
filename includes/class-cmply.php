@@ -367,11 +367,10 @@ final class CMPly_Cookie_Consent {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to connect CMPly.', 'cmply' ) );
 		}
-		check_admin_referer( 'cmply_connect_callback' );
 
-		$state = isset( $_GET['cmply_state'] ) ? sanitize_text_field( wp_unslash( $_GET['cmply_state'] ) ) : '';
-		if ( ! self::consume_connection_state( $state ) ) {
-			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=' . self::$connection_state_error ) );
+		$callback_error = self::validate_connect_callback_security();
+		if ( $callback_error ) {
+			wp_safe_redirect( admin_url( 'options-general.php?page=cmply&tab=site-settings&cmply_error=' . $callback_error ) );
 			exit;
 		}
 
@@ -444,6 +443,30 @@ final class CMPly_Cookie_Consent {
 
 		wp_safe_redirect( admin_url( 'options-general.php?page=cmply&cmply_connected=1' ) );
 		exit;
+	}
+
+	/**
+	 * Validate the signed callback state and an optional WordPress nonce.
+	 *
+	 * The administrator-bound HMAC state is the primary CSRF protection for
+	 * this cross-origin flow. The web connection flow can return without the
+	 * nested `_wpnonce`; requiring it unconditionally makes a valid
+	 * signed callback fail before the one-time connection code can be exchanged.
+	 *
+	 * @return string Empty when valid, otherwise a connection notice error key.
+	 */
+	private static function validate_connect_callback_security() {
+		$state = isset( $_GET['cmply_state'] ) ? sanitize_text_field( wp_unslash( $_GET['cmply_state'] ) ) : '';
+		if ( ! self::consume_connection_state( $state ) ) {
+			return self::$connection_state_error;
+		}
+
+		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+		if ( '' !== $nonce && ! wp_verify_nonce( $nonce, 'cmply_connect_callback' ) ) {
+			return 'callback_nonce';
+		}
+
+		return '';
 	}
 
 	/**
@@ -637,6 +660,7 @@ final class CMPly_Cookie_Consent {
 			'callback_wrong_user' => __( 'The connection was started by a different WordPress administrator session.', 'cmply' ),
 			'callback_expired'    => __( 'The WordPress connection state expired. Start the connection again.', 'cmply' ),
 			'callback_signature'  => __( 'The WordPress connection state signature is invalid. The site security keys may have changed during the connection.', 'cmply' ),
+			'callback_nonce'      => __( 'The WordPress callback nonce is invalid. Start the connection again from this administration session.', 'cmply' ),
 			'callback_invalid'    => __( 'The WordPress connection state is invalid. Start the connection again.', 'cmply' ),
 			'service_unavailable' => __( 'WordPress could not reach CMPly. Check outbound HTTPS access and try again.', 'cmply' ),
 			'exchange_expired'    => __( 'The connection code expired or was already used. Start the connection again.', 'cmply' ),

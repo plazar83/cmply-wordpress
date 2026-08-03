@@ -29,6 +29,32 @@ clean build directory, publishes that directory to WordPress.org `trunk` and a
 matching SVN tag, copies `.wordpress-org` artwork to SVN `assets`, generates a
 ZIP, creates the GitHub Release, and attaches the ZIP to it.
 
+## Manual test package on Windows
+
+Build local upload packages with the checked-in script:
+
+```powershell
+.\scripts\build-plugin-zip.ps1
+```
+
+Upload the generated `output/cmply.zip`. Do not package a containing `cmply`
+folder and do not use PowerShell `Compress-Archive` directly: it can store entry
+names with Windows backslashes such as `includes\class-cmply.php`, which causes
+a fatal activation error on Linux WordPress hosts. The script uses `tar`, keeps
+the distributable files at the ZIP root, verifies version consistency, rejects
+backslash entry names, checks all required files, and prints the SHA-256 hash.
+
+Before handing off any manual ZIP, inspect its entry list and confirm at least:
+
+```text
+cmply.php
+includes/class-cmply.php
+assets/admin.css
+readme.txt
+uninstall.php
+LICENSE
+```
+
 ## Release safety
 
 - Do not recreate or overwrite an existing WordPress.org version tag. Publish a

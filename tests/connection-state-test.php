@@ -5,7 +5,7 @@
 
 define( 'ABSPATH', __DIR__ );
 define( 'MINUTE_IN_SECONDS', 60 );
-define( 'CMPLY_COOKIE_CONSENT_VERSION', '1.0.20' );
+define( 'CMPLY_COOKIE_CONSENT_VERSION', '1.0.21' );
 define( 'CMPLY_COOKIE_CONSENT_BASENAME', 'cmply/cmply.php' );
 
 $test_user_id = 42;
@@ -91,6 +91,10 @@ function wp_create_nonce( $action ) {
 	return 'cmply_connect_callback' === $action ? 'test-callback-nonce' : '';
 }
 
+function wp_verify_nonce( $nonce, $action ) {
+	return 'cmply_connect_callback' === $action && 'test-callback-nonce' === $nonce ? 1 : false;
+}
+
 function admin_url( $path = '' ) {
 	return 'https://example.test/wp-admin/' . ltrim( $path, '/' );
 }
@@ -146,12 +150,14 @@ $class   = new ReflectionClass( 'CMPly_Cookie_Consent' );
 $create  = $class->getMethod( 'create_connection_state' );
 $consume = $class->getMethod( 'consume_connection_state' );
 $connect = $class->getMethod( 'connect_url' );
+$validate_callback = $class->getMethod( 'validate_connect_callback_security' );
 $normalize_gcm = $class->getMethod( 'normalize_gcm_defaults' );
 $request_gcm = $class->getMethod( 'request_gcm_settings' );
 $get_gcm = $class->getMethod( 'get_gcm_settings' );
 $create->setAccessible( true );
 $consume->setAccessible( true );
 $connect->setAccessible( true );
+$validate_callback->setAccessible( true );
 $normalize_gcm->setAccessible( true );
 $request_gcm->setAccessible( true );
 $get_gcm->setAccessible( true );
@@ -187,7 +193,23 @@ assert_state( 'cmply_connect_callback' === ( $return_query['action'] ?? '' ), 'c
 assert_state( 'test-callback-nonce' === ( $return_query['_wpnonce'] ?? '' ), 'callback URL must include a WordPress nonce' );
 
 $plugin_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-cmply.php' );
-assert_state( false !== strpos( $plugin_source, "check_admin_referer( 'cmply_connect_callback' )" ), 'callback handler must verify the WordPress nonce' );
+assert_state( false !== strpos( $plugin_source, "wp_verify_nonce( \$nonce, 'cmply_connect_callback' )" ), 'callback handler must verify a returned WordPress nonce' );
+
+$_GET = array( 'cmply_state' => $create->invoke( null ) );
+assert_state( '' === $validate_callback->invoke( null ), 'a signed callback state must remain valid when the nested nonce is missing' );
+
+$_GET = array(
+	'cmply_state' => $create->invoke( null ),
+	'_wpnonce'    => 'invalid-callback-nonce',
+);
+assert_state( 'callback_nonce' === $validate_callback->invoke( null ), 'an invalid returned nonce must be rejected' );
+
+$_GET = array(
+	'cmply_state' => $create->invoke( null ),
+	'_wpnonce'    => 'test-callback-nonce',
+);
+assert_state( '' === $validate_callback->invoke( null ), 'a valid signed state and WordPress nonce must be accepted' );
+$_GET = array();
 
 $sanitized = CMPly_Cookie_Consent::sanitize_options(
 	array(
