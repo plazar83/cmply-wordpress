@@ -4,7 +4,7 @@ Tags: cookies, consent, gdpr, cmp, cookie banner
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.22
+Stable tag: 1.0.23
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -154,7 +154,20 @@ Yes. Add one path per line in Exclude Paths, for example:
 
 The WordPress plugin stores only its admin settings in the WordPress database. The public consent cookie is created by the CMPly SDK in the visitor's browser.
 
+== Screenshots ==
+
+1. CMPly cookie consent banner displayed on a live website.
+2. Review the connected WordPress site's banner and installation status.
+3. Compare cookies, scripts, third parties, and browser storage before and after consent.
+4. Review detected cookies and assign consent categories.
+5. Customize cookie banner colors, buttons, layout, and appearance.
+6. Configure Google Consent Mode v2 for your connected WordPress website.
+
 == Changelog ==
+
+= 1.0.23 =
+* Added six real product screenshots for the WordPress.org listing.
+* Documented the cookie banner, WordPress connection status, consent-aware scan results, cookie classification, banner customization, and Google Consent Mode v2.
 
 = 1.0.22 =
 * Reworked the WordPress.org listing around the cookie consent banner, automatic cookie scanner, prior-consent blocking, and Google Consent Mode v2.
