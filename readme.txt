@@ -1,34 +1,69 @@
-=== CMPly ===
+=== CMPly – Cookie Consent Banner & GDPR Cookie Scanner ===
 Contributors: cmplyapp
 Tags: cookies, consent, gdpr, cmp, cookie banner
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.21
+Stable tag: 1.0.22
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Connect WordPress to CMPly.app for cookie consent, consent records, and consent-based script blocking.
+Cookie consent banner, automatic cookie scanner, prior-consent blocking, and Google Consent Mode v2 for WordPress.
 
 == Description ==
 
-CMPly connects a WordPress site to CMPly.app.
+CMPly is a cookie consent and consent management plugin for WordPress that helps you manage cookies, trackers, and visitor consent.
 
-The plugin prints the CMPly SDK in the public `<head>` at a very early priority and intentionally does not add `defer` or `async`, matching CMPly's recommended integration for blocking third-party scripts before they execute.
+Automatically scan your website for cookies and tracking technologies, display a customizable cookie consent banner, block non-essential scripts before consent, and manage consent from your CMPly dashboard.
 
-Features:
+= Key Features =
 
-* Connect button with a short-lived signed callback state and a single-use server-to-server authorization code.
-* Live account plan and monthly pageview usage synchronized on connect and verification.
-* Site ID configuration in Settings > CMPly.
-* Auto-inject or manual embed mode for the CMPly SDK.
-* HTTPS SDK loading from the official CMPly.app service.
-* Optional SDK version query for cache busting.
-* Optional language override with automatic browser-language detection by default.
-* URL path exclusions with wildcard support.
-* Editable Google Consent Mode v2 settings with global and regional consent defaults.
+* **Cookie Consent Banner** – Display a customizable consent banner and preference center on your WordPress site.
+* **Automatic Cookie Scanner** – Scan your website to detect cookies, trackers, and third-party services.
+* **Prior-Consent Blocking** – Block configured non-essential scripts before the visitor gives consent.
+* **Google Consent Mode v2** – Configure global and regional consent defaults for Google services directly from WordPress.
+* **Cookie Classification** – Organize detected cookies into consent categories.
+* **Consent Records** – Keep records of visitor consent and consent changes.
+* **Multi-language Support** – Automatically detect the visitor's language or configure it manually.
+* **Simple WordPress Integration** – Connect your WordPress site to CMPly in just a few clicks.
 
 This plugin requires an active CMPly.app site configuration. CMPly provides the consent banner, consent storage, cookie/provider metadata, and related consent-management functionality.
+
+= How It Works =
+
+1. Install and activate the CMPly plugin.
+2. Open Settings > CMPly and connect your website to CMPly.
+3. CMPly scans your website for cookies and tracking technologies.
+4. Review detected cookies and configure your consent banner.
+5. Publish your configuration.
+
+CMPly automatically loads the required consent management configuration on your WordPress website.
+
+= Automatic Cookie Scanner =
+
+CMPly scans your website to identify cookies, trackers, and third-party services.
+
+Detected technologies can be reviewed and classified from your CMPly dashboard, helping you keep your cookie configuration up to date as your website changes.
+
+= Google Consent Mode v2 =
+
+CMPly supports Google Consent Mode v2 and allows you to configure consent defaults for Google services.
+
+You can manage global and regional consent settings directly from the CMPly settings inside WordPress.
+
+= Technical Integration =
+
+CMPly loads its SDK early in the page `<head>` so that configured third-party scripts can be controlled before they execute.
+
+The SDK is intentionally loaded without `defer` or `async`, because delayed execution could allow tracking scripts to run before the visitor's consent preferences are known.
+
+Advanced options include:
+
+* Automatic or manual SDK embedding.
+* Site ID configuration.
+* SDK cache-busting version.
+* Language override.
+* URL exclusions with wildcard support.
 
 == External services ==
 
@@ -60,17 +95,46 @@ Service links:
 
 == Installation ==
 
-1. Upload the plugin folder to `/wp-content/plugins/cmply`.
-2. Activate "CMPly" in WordPress.
+1. Install CMPly from the WordPress plugin directory.
+2. Activate the plugin.
 3. Go to Settings > CMPly.
-4. Click "Connect to CMPly" or paste the Site ID from the CMPly dashboard.
-5. Save settings and clear any page cache.
+4. Click Connect to CMPly.
+5. Follow the setup process to scan your website and configure your consent banner.
+6. Clear your website cache if you use a caching plugin.
+
+That's it — CMPly will automatically load the consent configuration on your website.
+
+For an advanced manual setup, you can paste a Site ID from the CMPly dashboard instead of connecting an account.
 
 == Frequently Asked Questions ==
 
-= Why is the script not loaded with defer? =
+= Do I need a CMPly account? =
 
-CMPly must execute during HTML parsing so it can intercept and block third-party scripts before they run. Adding `defer` or `async` would make blocking less reliable.
+Yes. The WordPress plugin connects your website to the CMPly consent management platform. An advanced manual Site ID setup is also available.
+
+= Does CMPly scan my website for cookies? =
+
+Yes. CMPly can scan your website for cookies, trackers, and third-party services so they can be reviewed and classified.
+
+= Does CMPly block cookies before consent? =
+
+CMPly can block configured non-essential scripts until the visitor provides the required consent.
+
+= Does CMPly support Google Consent Mode v2? =
+
+Yes. Global and regional Google Consent Mode v2 settings can be configured for your connected website directly from WordPress.
+
+= Can I customize the cookie banner? =
+
+Yes. Banner appearance, content, and consent settings are managed from your CMPly account.
+
+= Does CMPly support multiple languages? =
+
+Yes. CMPly can automatically use the visitor's browser language, and a specific language can also be configured.
+
+= Why is the CMPly script not loaded with defer or async? =
+
+CMPly needs to execute early during page loading so it can prevent configured third-party scripts from running before consent. Loading it with `defer` or `async` could make prior-consent blocking less reliable.
 
 = What if I already added the CMPly script manually? =
 
@@ -91,6 +155,11 @@ Yes. Add one path per line in Exclude Paths, for example:
 The WordPress plugin stores only its admin settings in the WordPress database. The public consent cookie is created by the CMPly SDK in the visitor's browser.
 
 == Changelog ==
+
+= 1.0.22 =
+* Reworked the WordPress.org listing around the cookie consent banner, automatic cookie scanner, prior-consent blocking, and Google Consent Mode v2.
+* Added clearer setup steps, feature explanations, technical integration details, and frequently asked questions.
+* Updated the plugin display name and description without changing the `cmply` slug or connection behavior.
 
 = 1.0.21 =
 * Fixed WordPress account connections when the web callback returns without the nested WordPress nonce.
