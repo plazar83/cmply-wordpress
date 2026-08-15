@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: CMPly
+ * Plugin Name: CMPly – Cookie Consent Banner & GDPR Cookie Scanner
  * Plugin URI: https://cmply.app
- * Description: Connects WordPress to CMPly.app for cookie consent, consent records, and consent-based script blocking.
- * Version: 1.0.21
+ * Description: Cookie consent banner, automatic cookie scanner, prior-consent blocking, and Google Consent Mode v2 for WordPress.
+ * Version: 1.0.22
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author: CMPly
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CMPLY_COOKIE_CONSENT_VERSION', '1.0.21' );
+define( 'CMPLY_COOKIE_CONSENT_VERSION', '1.0.22' );
 define( 'CMPLY_COOKIE_CONSENT_FILE', __FILE__ );
 define( 'CMPLY_COOKIE_CONSENT_BASENAME', plugin_basename( __FILE__ ) );
 
